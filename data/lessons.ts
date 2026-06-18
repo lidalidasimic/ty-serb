@@ -171,6 +171,40 @@ export const lessons: Lesson[] = [
     grammarFocus: [],
     extraNotes: "",
   },
+  {
+    number: 10,
+    slug: "ucimo-srpski-10",
+    title: "Лекция 10. Указательные местоимения.",
+    level: "A1+",
+    topic: "Указательные местоимения",
+    status: "готово",
+    description:
+      "Продолжаем изучать сербский язык, закреплять лексику и грамматику на практических заданиях.",
+    gammaLink: "https://ucimo-srpski-12-s1fpfoe.gamma.site/",
+    homeworkLink: "",
+    telegramPostLink: "https://t.me/tyserb",
+    worksheetLink: "",
+    vocabulary: [],
+    grammarFocus: [],
+    extraNotes: "",
+  },
+  {
+    number: 11,
+    slug: "ucimo-srpski-11",
+    title: "Лекция 11. Прилагательные.",
+    level: "A1+",
+    topic: "Прилагательные",
+    status: "готово",
+    description:
+      "Продолжаем курс сербского языка и тренируем понимание, фразы и разговорную практику.",
+    gammaLink: "https://ucimo-srpski-11-xywikv6.gamma.site/",
+    homeworkLink: "",
+    telegramPostLink: "https://t.me/tyserb",
+    worksheetLink: "",
+    vocabulary: [],
+    grammarFocus: [],
+    extraNotes: "",
+  },
 ];
 
 export function getLessonBySlug(slug: string) {
