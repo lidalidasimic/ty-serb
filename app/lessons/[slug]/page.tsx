@@ -48,6 +48,8 @@ export default async function LessonPage({ params }: LessonPageProps) {
   const isReady = lesson.status === "готово";
   const hasWorksheet = lesson.worksheetLink.trim().length > 0;
   const currentLessonIndex = lessons.findIndex((item) => item.slug === lesson.slug);
+  const previousLesson =
+    currentLessonIndex > 0 ? lessons[currentLessonIndex - 1] : undefined;
   const nextLesson =
     currentLessonIndex >= 0 ? lessons[currentLessonIndex + 1] : undefined;
 
@@ -73,15 +75,26 @@ export default async function LessonPage({ params }: LessonPageProps) {
               <p className="mt-4 max-w-3xl text-lg leading-8 text-ink/72">
                 {lesson.description}
               </p>
-              {nextLesson ? (
-                <Link
-                  href={`/lessons/${nextLesson.slug}`}
-                  className="focus-ring mt-8 inline-flex items-center gap-2 rounded-lg border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124] transition hover:-translate-y-0.5"
-                >
-                  Следующая лекция
-                  <ArrowRight size={18} aria-hidden />
-                </Link>
-              ) : null}
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                {previousLesson ? (
+                  <Link
+                    href={`/lessons/${previousLesson.slug}`}
+                    className="focus-ring inline-flex items-center justify-center gap-2 rounded-lg border-2 border-ink bg-white px-5 py-3 font-black text-serbian-blue shadow-[3px_3px_0_#202124] transition hover:-translate-y-0.5"
+                  >
+                    <ArrowLeft size={18} aria-hidden />
+                    Предыдущая лекция
+                  </Link>
+                ) : null}
+                {nextLesson ? (
+                  <Link
+                    href={`/lessons/${nextLesson.slug}`}
+                    className="focus-ring inline-flex items-center justify-center gap-2 rounded-lg border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124] transition hover:-translate-y-0.5"
+                  >
+                    Следующая лекция
+                    <ArrowRight size={18} aria-hidden />
+                  </Link>
+                ) : null}
+              </div>
             </div>
             <div className="rounded-lg border-2 border-ink bg-white p-5 shadow-comic">
               <span
