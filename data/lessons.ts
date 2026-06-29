@@ -257,6 +257,23 @@ export const lessons: Lesson[] = [
     grammarFocus: [],
     extraNotes: "",
   },
+  {
+    number: 15,
+    slug: "ucimo-srpski-15",
+    title: "Лекция 15. Еда. Пекарня. Магазин. Инструментал. Рецепты.",
+    level: "A1+",
+    topic: "Еда, пекарня, магазин, инструментал, рецепты",
+    status: "готово",
+    description:
+      "Говорим о еде, пекарне и магазине, знакомимся с инструменталом и учимся обсуждать рецепты на сербском.",
+    gammaLink: "https://15-zxncep5.gamma.site/",
+    homeworkLink: "",
+    telegramPostLink: "https://t.me/tyserb",
+    worksheetLink: "",
+    vocabulary: [],
+    grammarFocus: [],
+    extraNotes: "",
+  },
 ];
 
 export function getLessonBySlug(slug: string) {
