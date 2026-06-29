@@ -222,6 +222,41 @@ export const lessons: Lesson[] = [
     grammarFocus: [],
     extraNotes: "",
   },
+  {
+    number: 13,
+    slug: "ucimo-srpski-13",
+    title: "Лекция 13. Соседи. Порядковые числительные. Времена года.",
+    level: "A1+",
+    topic: "Соседи, порядковые числительные, времена года",
+    status: "готово",
+    description:
+      "Продолжаем курс сербского языка: говорим о соседях, учимся использовать порядковые числительные и повторяем времена года.",
+    gammaLink: "https://ucimo-srpski-15-haquin9.gamma.site/",
+    homeworkLink: "",
+    telegramPostLink: "https://t.me/tyserb",
+    worksheetLink: "",
+    vocabulary: [],
+    grammarFocus: [],
+    extraNotes: "",
+  },
+  {
+    number: 14,
+    slug: "ucimo-srpski-14",
+    title:
+      "Лекция 14. Ресторан. Модальные глаголы. Аккузатив: местоимения, прилагательные, числительные.",
+    level: "A1+",
+    topic: "Ресторан, модальные глаголы, аккузатив",
+    status: "готово",
+    description:
+      "Учимся говорить в ресторане, разбираем модальные глаголы и тренируем аккузатив с местоимениями, прилагательными и числительными.",
+    gammaLink: "https://ucimo-srpski-16-387dpm2.gamma.site/",
+    homeworkLink: "",
+    telegramPostLink: "https://t.me/tyserb",
+    worksheetLink: "",
+    vocabulary: [],
+    grammarFocus: [],
+    extraNotes: "",
+  },
 ];
 
 export function getLessonBySlug(slug: string) {
