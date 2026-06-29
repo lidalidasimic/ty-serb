@@ -274,6 +274,23 @@ export const lessons: Lesson[] = [
     grammarFocus: [],
     extraNotes: "",
   },
+  {
+    number: 16,
+    slug: "trag-iz-golupca",
+    title: "Лекция 16. Детектив. Генитив.",
+    level: "A1+",
+    topic: "Детектив, генитив",
+    status: "готово",
+    description:
+      "Продолжаем курс сербского языка в формате детективной истории и разбираем генитив на практических примерах.",
+    gammaLink: "https://trag-iz-golupca-40k5myl.gamma.site/",
+    homeworkLink: "",
+    telegramPostLink: "https://t.me/tyserb",
+    worksheetLink: "",
+    vocabulary: [],
+    grammarFocus: [],
+    extraNotes: "",
+  },
 ];
 
 export function getLessonBySlug(slug: string) {
