@@ -205,6 +205,23 @@ export const lessons: Lesson[] = [
     grammarFocus: [],
     extraNotes: "",
   },
+  {
+    number: 12,
+    slug: "ucimo-srpski-12",
+    title: "Лекция 12. Хобби. Где живешь?",
+    level: "A1+",
+    topic: "Практика сербского языка",
+    status: "готово",
+    description:
+      "Продолжаем курс сербского языка: закрепляем лексику, грамматику и разговорные навыки на практических примерах.",
+    gammaLink: "https://ucimo-srpski-14-s3d0dzl.gamma.site/",
+    homeworkLink: "",
+    telegramPostLink: "https://t.me/tyserb",
+    worksheetLink: "",
+    vocabulary: [],
+    grammarFocus: [],
+    extraNotes: "",
+  },
 ];
 
 export function getLessonBySlug(slug: string) {
