@@ -9,7 +9,7 @@ function canOpenLesson(user, lesson) {
   return lesson.number === 1 || canOpenProtectedMaterials(user);
 }
 
-test("guest sees only the first demo lesson", () => {
+test("guest can open only the first demo lesson", () => {
   assert.equal(canOpenLesson(null, { number: 1 }), true);
   assert.equal(canOpenLesson(null, { number: 2 }), false);
 });

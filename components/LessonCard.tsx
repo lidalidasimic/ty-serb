@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Clock3, Presentation } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock3, Lock, Presentation } from "lucide-react";
 import type { PublicLesson } from "@/data/lessons";
 
 type LessonCardProps = {
   lesson: PublicLesson;
+  isLocked?: boolean;
 };
 
-export function LessonCard({ lesson }: LessonCardProps) {
+export function LessonCard({ lesson, isLocked = false }: LessonCardProps) {
   const isReady = lesson.status === "готово";
 
   return (
@@ -43,14 +44,24 @@ export function LessonCard({ lesson }: LessonCardProps) {
         <p className="text-sm leading-6 text-ink/72">{lesson.description}</p>
       </div>
       <div className="mt-auto pt-6">
-        <Link
-          href={`/lessons/${lesson.slug}`}
-          className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-lg border-2 border-ink bg-plum px-4 py-3 font-black text-white shadow-[3px_3px_0_#202124] transition group-hover:bg-coral"
-        >
-          <Presentation size={18} aria-hidden />
-          Открыть урок
-          <ArrowRight size={18} aria-hidden />
-        </Link>
+        {isLocked ? (
+          <Link
+            href="/register"
+            className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-lg border-2 border-ink bg-ink/15 px-4 py-3 font-black text-ink/60 shadow-[3px_3px_0_#202124] transition hover:bg-ink/20"
+          >
+            <Lock size={18} aria-hidden />
+            Зарегистрируйтесь
+          </Link>
+        ) : (
+          <Link
+            href={`/lessons/${lesson.slug}`}
+            className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-lg border-2 border-ink bg-plum px-4 py-3 font-black text-white shadow-[3px_3px_0_#202124] transition group-hover:bg-coral"
+          >
+            <Presentation size={18} aria-hidden />
+            Открыть урок
+            <ArrowRight size={18} aria-hidden />
+          </Link>
+        )}
       </div>
     </article>
   );

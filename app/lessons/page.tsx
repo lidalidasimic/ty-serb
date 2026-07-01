@@ -6,7 +6,8 @@ import { getCurrentUser } from "@/lib/supabase-server";
 
 export default async function LessonsPage() {
   const user = await getCurrentUser();
-  const lessons = getPublicLessons(canOpenProtectedMaterials(user));
+  const canViewProtectedLessons = canOpenProtectedMaterials(user);
+  const lessons = getPublicLessons();
 
   return (
     <>
@@ -15,7 +16,7 @@ export default async function LessonsPage() {
         title="Библиотека уроков Ты-Серб курс"
         description="Ищите уроки по теме, уровню и ключевым словам. Статус показывает, какие материалы уже готовы, а какие скоро появятся."
       />
-      <LessonFilters lessons={lessons} />
+      <LessonFilters lessons={lessons} canViewProtectedLessons={canViewProtectedLessons} />
     </>
   );
 }

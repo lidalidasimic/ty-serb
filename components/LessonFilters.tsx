@@ -7,9 +7,13 @@ import type { PublicLesson } from "@/data/lessons";
 
 type LessonFiltersProps = {
   lessons: PublicLesson[];
+  canViewProtectedLessons: boolean;
 };
 
-export default function LessonFilters({ lessons }: LessonFiltersProps) {
+export default function LessonFilters({
+  lessons,
+  canViewProtectedLessons,
+}: LessonFiltersProps) {
   const [query, setQuery] = useState("");
   const [level, setLevel] = useState("all");
   const [topic, setTopic] = useState("all");
@@ -105,7 +109,11 @@ export default function LessonFilters({ lessons }: LessonFiltersProps) {
         {filteredLessons.length > 0 ? (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {filteredLessons.map((lesson) => (
-              <LessonCard key={lesson.slug} lesson={lesson} />
+              <LessonCard
+                key={lesson.slug}
+                lesson={lesson}
+                isLocked={lesson.number !== 1 && !canViewProtectedLessons}
+              />
             ))}
           </div>
         ) : (

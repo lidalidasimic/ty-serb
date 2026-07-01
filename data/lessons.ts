@@ -315,8 +315,6 @@ export function toPublicLesson(lesson: Lesson): PublicLesson {
   return publicLesson;
 }
 
-export function getPublicLessons(canViewProtectedLessons: boolean) {
-  return lessons
-    .filter((lesson) => canViewProtectedLessons || lesson.number === 1)
-    .map(toPublicLesson);
+export function getPublicLessons() {
+  return lessons.map(toPublicLesson);
 }
