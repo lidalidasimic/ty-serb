@@ -3,10 +3,10 @@
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { LessonCard } from "@/components/LessonCard";
-import type { Lesson } from "@/data/lessons";
+import type { PublicLesson } from "@/data/lessons";
 
 type LessonFiltersProps = {
-  lessons: Lesson[];
+  lessons: PublicLesson[];
 };
 
 export default function LessonFilters({ lessons }: LessonFiltersProps) {

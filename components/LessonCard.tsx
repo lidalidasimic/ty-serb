@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Clock3, Presentation } from "lucide-react";
-import type { Lesson } from "@/data/lessons";
+import type { PublicLesson } from "@/data/lessons";
 
 type LessonCardProps = {
-  lesson: Lesson;
+  lesson: PublicLesson;
 };
 
 export function LessonCard({ lesson }: LessonCardProps) {

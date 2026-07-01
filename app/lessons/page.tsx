@@ -1,8 +1,13 @@
 import LessonFilters from "@/components/LessonFilters";
 import { PageHero } from "@/components/PageHero";
-import { lessons } from "@/data/lessons";
+import { getPublicLessons } from "@/data/lessons";
+import { canOpenProtectedMaterials } from "@/lib/access-control";
+import { getCurrentUser } from "@/lib/supabase-server";
 
-export default function LessonsPage() {
+export default async function LessonsPage() {
+  const user = await getCurrentUser();
+  const lessons = getPublicLessons(canOpenProtectedMaterials(user));
+
   return (
     <>
       <PageHero

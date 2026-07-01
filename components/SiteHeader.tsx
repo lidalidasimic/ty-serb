@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { BookMarked } from "lucide-react";
+import { logoutAction } from "@/app/login/actions";
+import { getCurrentUser } from "@/lib/supabase-server";
 
 const navItems = [
   { href: "/", label: "Главная" },
@@ -7,7 +9,9 @@ const navItems = [
   { href: "/contact", label: "Запись" },
 ];
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const user = await getCurrentUser();
+
   return (
     <header className="sticky top-0 z-50 border-b-2 border-ink bg-paper/90 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
       <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4">
@@ -33,6 +37,28 @@ export function SiteHeader() {
               {item.label}
             </Link>
           ))}
+          {user?.isAdmin ? (
+            <Link
+              href="/admin"
+              className="focus-ring whitespace-nowrap rounded-lg px-3 py-2 text-sm font-black text-serbian-blue transition hover:bg-sunflower sm:px-4"
+            >
+              Админ
+            </Link>
+          ) : null}
+          {user ? (
+            <form action={logoutAction}>
+              <button className="focus-ring whitespace-nowrap rounded-lg px-3 py-2 text-sm font-black text-ink transition hover:bg-sunflower sm:px-4">
+                Выйти
+              </button>
+            </form>
+          ) : (
+            <Link
+              href="/login"
+              className="focus-ring whitespace-nowrap rounded-lg px-3 py-2 text-sm font-black text-serbian-blue transition hover:bg-sunflower sm:px-4"
+            >
+              Войти
+            </Link>
+          )}
         </div>
       </nav>
     </header>

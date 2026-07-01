@@ -10,6 +10,8 @@ import {
   Send,
 } from "lucide-react";
 import { getLessonBySlug, lessons } from "@/data/lessons";
+import { canOpenLesson } from "@/lib/access-control";
+import { getCurrentUser, logActivity } from "@/lib/supabase-server";
 
 type LessonPageProps = {
   params: Promise<{
@@ -44,6 +46,46 @@ export default async function LessonPage({ params }: LessonPageProps) {
   if (!lesson) {
     notFound();
   }
+
+  const user = await getCurrentUser();
+  const canAccessLesson = canOpenLesson(user, lesson);
+
+  if (!canAccessLesson) {
+    await logActivity({
+      userId: user?.id ?? null,
+      lessonSlug: lesson.slug,
+      actionType: "lesson_denied",
+    });
+
+    return (
+      <section className="px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-2xl border-2 border-ink bg-white p-6 shadow-comic sm:p-10">
+          <p className="font-black uppercase tracking-[0.18em] text-serbian-red">
+            закрытая лекция
+          </p>
+          <h1 className="mt-3 text-4xl font-black">
+            Доступ к материалам ожидает подтверждения
+          </h1>
+          <p className="mt-4 leading-7 text-ink/70">
+            Первая лекция открыта как демо. Для остальных материалов нужно войти и
+            получить ручное подтверждение доступа.
+          </p>
+          <Link
+            href={user ? "/access" : `/login?next=/lessons/${lesson.slug}`}
+            className="focus-ring mt-8 inline-flex rounded-lg border-2 border-ink bg-serbian-blue px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]"
+          >
+            {user ? "Запросить доступ" : "Войти и запросить доступ"}
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
+  await logActivity({
+    userId: user?.id ?? null,
+    lessonSlug: lesson.slug,
+    actionType: "lesson_opened",
+  });
 
   const isReady = lesson.status === "готово";
   const hasWorksheet = lesson.worksheetLink.trim().length > 0;
@@ -114,7 +156,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
               </p>
               <p className="mt-2 text-2xl font-black">{lesson.topic}</p>
               <a
-                href={lesson.gammaLink}
+                href={`/api/materials/${lesson.slug}/gamma`}
                 target="_blank"
                 rel="noreferrer"
                 className="focus-ring mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg border-2 border-ink bg-plum px-4 py-3 font-black text-white shadow-[3px_3px_0_#202124] transition hover:-translate-y-0.5"
@@ -124,7 +166,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
               </a>
               {hasWorksheet ? (
                 <a
-                  href={lesson.worksheetLink}
+                  href={`/api/materials/${lesson.slug}/worksheet`}
                   target="_blank"
                   rel="noreferrer"
                   className="focus-ring mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border-2 border-ink bg-white px-4 py-3 font-black shadow-[3px_3px_0_#202124] transition hover:-translate-y-0.5"
@@ -142,7 +184,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
                 </div>
               )}
               <a
-                href={lesson.telegramPostLink}
+                href={`/api/materials/${lesson.slug}/telegram`}
                 target="_blank"
                 rel="noreferrer"
                 className="focus-ring mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border-2 border-ink bg-white px-4 py-3 font-black text-serbian-blue shadow-[3px_3px_0_#202124] transition hover:-translate-y-0.5"
