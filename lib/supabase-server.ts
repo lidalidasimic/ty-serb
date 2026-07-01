@@ -4,6 +4,8 @@ import { isAdminEmail, type AccessStatus, type AppUser } from "@/lib/access-cont
 
 const accessTokenCookie = "ty_serb_access_token";
 const refreshTokenCookie = "ty_serb_refresh_token";
+const rememberMeCookie = "ty_serb_remember_me";
+const rememberMeMaxAge = 60 * 60 * 24 * 30;
 
 type SupabaseUserResponse = {
   id: string;
@@ -113,30 +115,46 @@ async function supabaseAdminFetch(path: string, init: RequestInit = {}) {
   return response.json().catch(() => null);
 }
 
-async function setSessionCookies(session: SupabaseSessionResponse) {
+async function setSessionCookies(session: SupabaseSessionResponse, rememberMe = false) {
   if (!session.access_token || !session.refresh_token) {
     return;
   }
 
   const cookieStore = await cookies();
+  const persistentOptions = rememberMe ? { maxAge: rememberMeMaxAge } : {};
   cookieStore.set(accessTokenCookie, session.access_token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
+    ...persistentOptions,
   });
   cookieStore.set(refreshTokenCookie, session.refresh_token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
+    ...persistentOptions,
   });
+
+  if (rememberMe) {
+    cookieStore.set(rememberMeCookie, "1", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: rememberMeMaxAge,
+    });
+  } else {
+    cookieStore.delete(rememberMeCookie);
+  }
 }
 
 export async function clearSessionCookies() {
   const cookieStore = await cookies();
   cookieStore.delete(accessTokenCookie);
   cookieStore.delete(refreshTokenCookie);
+  cookieStore.delete(rememberMeCookie);
 }
 
 export async function getAccessTokenFromCookies() {
@@ -144,13 +162,46 @@ export async function getAccessTokenFromCookies() {
   return cookieStore.get(accessTokenCookie)?.value ?? null;
 }
 
-export async function signInWithPassword(email: string, password: string) {
+async function getRefreshTokenFromCookies() {
+  const cookieStore = await cookies();
+  return cookieStore.get(refreshTokenCookie)?.value ?? null;
+}
+
+async function shouldRememberSession() {
+  const cookieStore = await cookies();
+  return cookieStore.get(rememberMeCookie)?.value === "1";
+}
+
+async function refreshSessionFromCookies() {
+  const refreshToken = await getRefreshTokenFromCookies();
+  if (!refreshToken) {
+    return null;
+  }
+
+  const session = (await supabaseAuthFetch("/auth/v1/token?grant_type=refresh_token", {
+    method: "POST",
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  })) as SupabaseSessionResponse;
+
+  await setSessionCookies(session, await shouldRememberSession());
+  return session.access_token ?? null;
+}
+
+async function getAuthUserWithToken(accessToken: string) {
+  return (await supabaseAuthFetch("/auth/v1/user", {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })) as SupabaseUserResponse;
+}
+
+export async function signInWithPassword(email: string, password: string, rememberMe = false) {
   const session = (await supabaseAuthFetch("/auth/v1/token?grant_type=password", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   })) as SupabaseSessionResponse;
 
-  await setSessionCookies(session);
+  await setSessionCookies(session, rememberMe);
   await ensureProfile(session.user, "pending");
   await updateLastLogin(session.user?.id);
   await logActivity({
@@ -164,6 +215,7 @@ export async function signUpWithPassword(input: {
   password: string;
   name: string;
   contact: string;
+  rememberMe?: boolean;
 }) {
   const session = (await supabaseAuthFetch("/auth/v1/signup", {
     method: "POST",
@@ -177,7 +229,7 @@ export async function signUpWithPassword(input: {
     }),
   })) as SupabaseSessionResponse;
 
-  await setSessionCookies(session);
+  await setSessionCookies(session, Boolean(input.rememberMe));
   await ensureProfile(session.user, "pending", input.name, input.contact);
   await logActivity({
     userId: session.user?.id ?? null,
@@ -232,17 +284,25 @@ export async function getProfile(userId: string) {
 }
 
 export async function getCurrentUser(): Promise<AppUser | null> {
-  const accessToken = await getAccessTokenFromCookies();
+  let accessToken = await getAccessTokenFromCookies();
   if (!accessToken) {
-    return null;
+    accessToken = await refreshSessionFromCookies().catch(() => null);
+    if (!accessToken) {
+      return null;
+    }
   }
 
   try {
-    const authUser = (await supabaseAuthFetch("/auth/v1/user", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    })) as SupabaseUserResponse;
+    let authUser: SupabaseUserResponse;
+    try {
+      authUser = await getAuthUserWithToken(accessToken);
+    } catch {
+      const refreshedAccessToken = await refreshSessionFromCookies();
+      if (!refreshedAccessToken) {
+        return null;
+      }
+      authUser = await getAuthUserWithToken(refreshedAccessToken);
+    }
 
     if (!authUser.id || !authUser.email) {
       return null;

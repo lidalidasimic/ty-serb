@@ -60,6 +60,15 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
               className="focus-ring mt-2 w-full rounded-lg border-2 border-ink bg-paper px-4 py-3 font-bold"
             />
           </label>
+          <label className="flex items-center gap-3 rounded-lg border-2 border-ink bg-paper px-4 py-3 font-bold">
+            <input
+              name="rememberMe"
+              type="checkbox"
+              defaultChecked
+              className="size-5 accent-serbian-red"
+            />
+            Запомнить меня
+          </label>
           <button className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-lg border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">
             <UserPlus size={18} aria-hidden />
             Зарегистрироваться

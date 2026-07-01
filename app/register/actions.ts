@@ -40,6 +40,7 @@ export async function registerAction(formData: FormData) {
       password: String(formData.get("password") ?? ""),
       name: String(formData.get("name") ?? "").trim(),
       contact: String(formData.get("contact") ?? "").trim(),
+      rememberMe: formData.get("rememberMe") === "on",
     });
   } catch (error) {
     const message = getRegisterErrorMessage(error);

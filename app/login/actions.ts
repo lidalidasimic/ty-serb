@@ -37,9 +37,10 @@ export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const next = String(formData.get("next") ?? "/lessons");
+  const rememberMe = formData.get("rememberMe") === "on";
 
   try {
-    await signInWithPassword(email, password);
+    await signInWithPassword(email, password, rememberMe);
   } catch (error) {
     const message = getLoginErrorMessage(error);
     redirect(`/login?next=${encodeURIComponent(next)}&error=${encodeURIComponent(message)}`);
