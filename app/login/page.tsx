@@ -5,12 +5,16 @@ import { loginAction } from "@/app/login/actions";
 type LoginPageProps = {
   searchParams?: Promise<{
     next?: string;
+    error?: string;
+    message?: string;
   }>;
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const next = params?.next ?? "/lessons";
+  const error = params?.error;
+  const message = params?.message;
 
   return (
     <section className="px-4 py-16 sm:px-6 lg:px-8">
@@ -21,6 +25,16 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           Первая лекция открыта всем. Для остальных материалов нужен аккаунт и ручное
           подтверждение доступа.
         </p>
+        {error ? (
+          <div className="mt-6 rounded-lg border-2 border-ink bg-serbian-red/10 p-4 font-bold text-serbian-red">
+            {error}
+          </div>
+        ) : null}
+        {message ? (
+          <div className="mt-6 rounded-lg border-2 border-ink bg-mint/30 p-4 font-bold">
+            {message}
+          </div>
+        ) : null}
         <form action={loginAction} className="mt-8 space-y-4">
           <input type="hidden" name="next" value={next} />
           <label className="block">

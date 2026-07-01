@@ -1,7 +1,16 @@
 import { UserPlus } from "lucide-react";
 import { registerAction } from "@/app/register/actions";
 
-export default function RegisterPage() {
+type RegisterPageProps = {
+  searchParams?: Promise<{
+    error?: string;
+  }>;
+};
+
+export default async function RegisterPage({ searchParams }: RegisterPageProps) {
+  const params = await searchParams;
+  const error = params?.error;
+
   return (
     <section className="px-4 py-16 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-xl border-2 border-ink bg-white p-6 shadow-comic sm:p-10">
@@ -10,6 +19,11 @@ export default function RegisterPage() {
         <p className="mt-3 leading-7 text-ink/70">
           После регистрации доступ к закрытым лекциям ожидает ручного подтверждения.
         </p>
+        {error ? (
+          <div className="mt-6 rounded-lg border-2 border-ink bg-serbian-red/10 p-4 font-bold text-serbian-red">
+            {error}
+          </div>
+        ) : null}
         <form action={registerAction} className="mt-8 space-y-4">
           <label className="block">
             <span className="text-sm font-black">Имя</span>
