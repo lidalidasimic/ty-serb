@@ -15,6 +15,11 @@ export type Lesson = {
   extraNotes: string;
 };
 
+export type PublicLesson = Omit<
+  Lesson,
+  "gammaLink" | "homeworkLink" | "telegramPostLink" | "worksheetLink" | "extraNotes"
+>;
+
 export const lessons: Lesson[] = [
   {
     number: 1,
@@ -43,7 +48,7 @@ export const lessons: Lesson[] = [
     status: "готово",
     description:
       "Курс продолжается: учимся говорить о профессии, строить простые фразы с глаголом «быть», читать диалоги и закреплять базовые конструкции.",
-    gammaLink: "https://noteworthy-insect-b6m5fmp.gamma.site/",
+    gammaLink: "https://tyserb2-b6m5fmp.gamma.site/",
     homeworkLink: "https://example.com/homework/lesson-2",
     telegramPostLink: "https://t.me/tyserb/38",
     worksheetLink: "",
@@ -60,7 +65,7 @@ export const lessons: Lesson[] = [
     status: "готово",
     description:
       "Разбираем, как образуется множественное число в сербском, какие изменения происходят в словах и как работают притяжательные местоимения.",
-    gammaLink: "https://bony-snake-cnpu7yp.gamma.site/",
+    gammaLink: "https://tyserb3-cnpu7yp.gamma.site/",
     homeworkLink: "https://example.com/homework/lesson-3",
     telegramPostLink: "https://t.me/example/103",
     worksheetLink: "",
@@ -77,7 +82,7 @@ export const lessons: Lesson[] = [
     status: "готово",
     description:
       "Учимся согласовывать прилагательные с существительными и строить живые описания.",
-    gammaLink: "https://4--xa7cc2c.gamma.site/",
+    gammaLink: "https://tyserb4-xa7cc2c.gamma.site/",
     homeworkLink: "https://example.com/homework/lesson-4",
     telegramPostLink: "https://t.me/tyserb/63",
     worksheetLink: "https://example.com/worksheets/lesson-4",
@@ -94,7 +99,7 @@ export const lessons: Lesson[] = [
     status: "готово",
     description:
       "Собираем базовые глагольные формы и говорим о привычках, учебе и планах на день.",
-    gammaLink: "https://ucimo-srpski-8-mo4jyut.gamma.site/",
+    gammaLink: "https://tyserb5-mo4jyut.gamma.site/",
     homeworkLink: "https://example.com/homework/lesson-5",
     telegramPostLink: "https://t.me/tyserb/55",
     worksheetLink: "",
@@ -111,7 +116,7 @@ export const lessons: Lesson[] = [
     status: "готово",
     description:
       "Разбираем сербские глаголы, их формы и употребление в понятных примерах.",
-    gammaLink: "https://serbian-verbs-kids-j9tv6dl.gamma.site/",
+    gammaLink: "https://tyserb6-j9tv6dl.gamma.site/",
     homeworkLink: "https://example.com/homework/lesson-6",
     telegramPostLink: "https://t.me/tyserb/62",
     worksheetLink: "",
@@ -129,7 +134,7 @@ export const lessons: Lesson[] = [
     status: "готово",
     description:
       "Закрепляем сербский язык с помощью ярких примеров, заданий и темы супергероев.",
-    gammaLink: "https://ucimo-srpski-superheroji-7pl8bdp.gamma.site/",
+    gammaLink: "https://tyserb7-7pl8bdp.gamma.site/",
     homeworkLink: "",
     telegramPostLink: "https://t.me/tyserb",
     worksheetLink: "",
@@ -146,7 +151,7 @@ export const lessons: Lesson[] = [
     status: "готово",
     description:
       "Продолжаем развивать словарный запас, понимание речи и навыки построения фраз.",
-    gammaLink: "https://ucimo-srpski-10-xcueii1.gamma.site/",
+    gammaLink: "https://tyserb8-xcueii1.gamma.site/",
     homeworkLink: "",
     telegramPostLink: "https://t.me/tyserb",
     worksheetLink: "",
@@ -163,7 +168,7 @@ export const lessons: Lesson[] = [
     status: "готово",
     description:
       "Практикуем сербский язык, закрепляем изученные конструкции и учимся говорить увереннее.",
-    gammaLink: "https://ucimo-srpski-9-34pxgmk.gamma.site/",
+    gammaLink: "https://tyserb9-34pxgmk.gamma.site/",
     homeworkLink: "",
     telegramPostLink: "https://t.me/tyserb/65",
     worksheetLink: "",
@@ -180,7 +185,7 @@ export const lessons: Lesson[] = [
     status: "готово",
     description:
       "Продолжаем изучать сербский язык, закреплять лексику и грамматику на практических заданиях.",
-    gammaLink: "https://ucimo-srpski-12-s1fpfoe.gamma.site/",
+    gammaLink: "https://tyserb10-s1fpfoe.gamma.site/",
     homeworkLink: "",
     telegramPostLink: "https://t.me/tyserb",
     worksheetLink: "",
@@ -197,7 +202,7 @@ export const lessons: Lesson[] = [
     status: "готово",
     description:
       "Продолжаем курс сербского языка и тренируем понимание, фразы и разговорную практику.",
-    gammaLink: "https://ucimo-srpski-11-xywikv6.gamma.site/",
+    gammaLink: "https://tyserb11-xywikv6.gamma.site/",
     homeworkLink: "",
     telegramPostLink: "https://t.me/tyserb",
     worksheetLink: "",
@@ -214,7 +219,7 @@ export const lessons: Lesson[] = [
     status: "готово",
     description:
       "Продолжаем курс сербского языка: закрепляем лексику, грамматику и разговорные навыки на практических примерах.",
-    gammaLink: "https://ucimo-srpski-14-s3d0dzl.gamma.site/",
+    gammaLink: "https://tyserb12-s3d0dzl.gamma.site/",
     homeworkLink: "",
     telegramPostLink: "https://t.me/tyserb",
     worksheetLink: "",
@@ -231,7 +236,7 @@ export const lessons: Lesson[] = [
     status: "готово",
     description:
       "Продолжаем курс сербского языка: говорим о соседях, учимся использовать порядковые числительные и повторяем времена года.",
-    gammaLink: "https://ucimo-srpski-15-haquin9.gamma.site/",
+    gammaLink: "https://tyserb13-haquin9.gamma.site/",
     homeworkLink: "",
     telegramPostLink: "https://t.me/tyserb",
     worksheetLink: "",
@@ -249,7 +254,7 @@ export const lessons: Lesson[] = [
     status: "готово",
     description:
       "Учимся говорить в ресторане, разбираем модальные глаголы и тренируем аккузатив с местоимениями, прилагательными и числительными.",
-    gammaLink: "https://ucimo-srpski-16-387dpm2.gamma.site/",
+    gammaLink: "https://tyserb14-387dpm2.gamma.site/",
     homeworkLink: "",
     telegramPostLink: "https://t.me/tyserb",
     worksheetLink: "",
@@ -266,7 +271,7 @@ export const lessons: Lesson[] = [
     status: "готово",
     description:
       "Говорим о еде, пекарне и магазине, знакомимся с инструменталом и учимся обсуждать рецепты на сербском.",
-    gammaLink: "https://15-zxncep5.gamma.site/",
+    gammaLink: "https://tyserb15-zxncep5.gamma.site/",
     homeworkLink: "",
     telegramPostLink: "https://t.me/tyserb",
     worksheetLink: "",
@@ -283,7 +288,7 @@ export const lessons: Lesson[] = [
     status: "готово",
     description:
       "Продолжаем курс сербского языка в формате детективной истории и разбираем генитив на практических примерах.",
-    gammaLink: "https://trag-iz-golupca-40k5myl.gamma.site/",
+    gammaLink: "https://tyserb16-40k5myl.gamma.site/",
     homeworkLink: "",
     telegramPostLink: "https://t.me/tyserb",
     worksheetLink: "",
@@ -295,4 +300,23 @@ export const lessons: Lesson[] = [
 
 export function getLessonBySlug(slug: string) {
   return lessons.find((lesson) => lesson.slug === slug);
+}
+
+export function toPublicLesson(lesson: Lesson): PublicLesson {
+  const {
+    gammaLink,
+    homeworkLink,
+    telegramPostLink,
+    worksheetLink,
+    extraNotes,
+    ...publicLesson
+  } = lesson;
+
+  return publicLesson;
+}
+
+export function getPublicLessons(canViewProtectedLessons: boolean) {
+  return lessons
+    .filter((lesson) => canViewProtectedLessons || lesson.number === 1)
+    .map(toPublicLesson);
 }
