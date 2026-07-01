@@ -11,8 +11,10 @@ import {
   Users,
 } from "lucide-react";
 import { LessonCard } from "@/components/LessonCard";
-import { lessons } from "@/data/lessons";
+import { getPublicLessons } from "@/data/lessons";
 import { testimonials } from "@/data/testimonials";
+import { canOpenProtectedMaterials } from "@/lib/access-control";
+import { getCurrentUser } from "@/lib/supabase-server";
 
 const courseFlow = [
   {
@@ -39,7 +41,10 @@ const audience = [
   "системное изучение языка",
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const user = await getCurrentUser();
+  const canViewProtectedLessons = canOpenProtectedMaterials(user);
+  const lessons = getPublicLessons();
   const featuredLessons = lessons.slice(0, 3);
   const readyCount = lessons.filter((lesson) => lesson.status === "готово").length;
 
@@ -247,7 +252,11 @@ export default function HomePage() {
           </div>
           <div className="grid gap-5 md:grid-cols-3">
             {featuredLessons.map((lesson) => (
-              <LessonCard key={lesson.slug} lesson={lesson} />
+              <LessonCard
+                key={lesson.slug}
+                lesson={lesson}
+                isLocked={lesson.number !== 1 && !canViewProtectedLessons}
+              />
             ))}
           </div>
         </div>
