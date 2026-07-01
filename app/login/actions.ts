@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { signInWithPassword, clearSessionCookies } from "@/lib/supabase-server";
+import { signInWithPassword, clearSessionCookies, logActivity } from "@/lib/supabase-server";
 
 function getLoginErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : "";
@@ -43,6 +43,10 @@ export async function loginAction(formData: FormData) {
     await signInWithPassword(email, password, rememberMe);
   } catch (error) {
     const message = getLoginErrorMessage(error);
+    await logActivity({
+      userId: null,
+      actionType: "auth_login_failed",
+    });
     redirect(`/login?next=${encodeURIComponent(next)}&error=${encodeURIComponent(message)}`);
   }
 

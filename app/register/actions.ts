@@ -1,10 +1,17 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { signUpWithPassword } from "@/lib/supabase-server";
+import { logActivity, signUpWithPassword } from "@/lib/supabase-server";
 
 function getRegisterErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : "";
+
+  if (
+    message.toLowerCase().includes("email rate exceeded") ||
+    message.toLowerCase().includes("rate limit")
+  ) {
+    return "Слишком много попыток отправки письма. Подождите несколько минут и попробуйте снова.";
+  }
 
   if (message.toLowerCase().includes("user already registered")) {
     return "Такой email уже зарегистрирован. Попробуйте войти.";
@@ -44,6 +51,12 @@ export async function registerAction(formData: FormData) {
     });
   } catch (error) {
     const message = getRegisterErrorMessage(error);
+    await logActivity({
+      userId: null,
+      actionType: message.includes("Слишком много попыток")
+        ? "auth_register_failed_email_rate_limit"
+        : "auth_register_failed",
+    });
     redirect(`/register?error=${encodeURIComponent(message)}`);
   }
 

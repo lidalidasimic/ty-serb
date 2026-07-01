@@ -74,6 +74,18 @@ Users can register, login, and request access here:
 
 Important: the website now hides and protects material links through backend routes such as `/api/materials/[slug]/gamma`. However, old public Gamma URLs cannot be revoked by this website. To fully protect lectures, make the Gamma pages private, rotate their public URLs, or move PDFs/videos into private storage with signed URLs.
 
+### Supabase email rate limit
+
+Registration is handled by Supabase Auth. If Supabase email confirmation is enabled and the project uses the built-in Supabase email sender, Supabase can return `email rate exceeded` after a small number of signup emails. This is a project-level email sending limit, not a bug in the registration form.
+
+For real student registration, configure a custom SMTP provider in Supabase:
+
+```text
+Supabase Dashboard -> Authentication -> Emails / SMTP settings
+```
+
+Keep spam protection enabled, but use your own SMTP provider so several students with different email addresses can register one after another. The app maps this error to a user-friendly message and logs `auth_register_failed_email_rate_limit` for admin review.
+
 ## Edit lessons
 
 All lesson content is in:
