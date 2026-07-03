@@ -30,8 +30,8 @@ export const lessons: Lesson[] = [
     status: "готово",
     description:
       "Знакомимся с сербским алфавитом, читаем простые слова и тренируем звуки, которые отличаются от русского.",
-    gammaLink: "https://adorable-insect-f8yuabg.gamma.site/",
-    homeworkLink: "https://adorable-insect-f8yuabg.gamma.site/",
+    gammaLink: "https://tyserb1-f8yuabg.gamma.site/",
+    homeworkLink: "https://tyserb1-f8yuabg.gamma.site/",
     telegramPostLink: "https://t.me/tyserb/11",
     worksheetLink: "",
     vocabulary: ["здраво", "хвала", "молим", "да", "не", "добар дан"],
