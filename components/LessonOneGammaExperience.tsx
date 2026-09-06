@@ -132,7 +132,7 @@ export default function LessonOneGammaExperience() {
     ? checked[section] ? (correct ? "border-green-700 bg-green-200 text-green-950" : "border-red-700 bg-red-100 text-red-900") : "bg-blue-50"
     : "bg-white";
 
-  return <main className="bg-[#fffdf8] px-4 py-8 sm:px-6">
+  return <div className="bg-[#fffdf8] px-4 py-8 sm:px-6">
     <div className="mx-auto max-w-[640px] text-[17px] leading-7 text-ink">
       <div className="sticky top-0 z-20 -mx-4 border-b-2 border-ink bg-[#fffdf8]/95 px-4 py-3 backdrop-blur">
         <div className="flex justify-between gap-3 text-sm font-black"><span>Урок 1 · по структуре лекции</span><span>{completed.length}/8</span></div>
@@ -255,5 +255,5 @@ export default function LessonOneGammaExperience() {
         {done && <div className="mt-5 rounded-xl border-2 border-ink bg-mint/40 p-6 text-center"><Check className="mx-auto" size={40} /><h3 className="mt-2 text-3xl font-black">Први час је готов!</h3><p>Структура лекции пройдена полностью. Сачувај текст о себи — он понадобится дальше.</p></div>}
       </section>
     </div>
-  </main>;
+  </div>;
 }
