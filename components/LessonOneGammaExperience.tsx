@@ -67,19 +67,6 @@ const schoolWords = [
   ["🔑", "кључ", "ключ"], ["🎒", "торба", "сумка"],
 ];
 
-function say(text: string) {
-  if (!("speechSynthesis" in window)) return;
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "sr-RS";
-  utterance.rate = 0.84;
-  speechSynthesis.speak(utterance);
-}
-
-function AudioButton({ text }: { text: string }) {
-  return <button onClick={() => say(text)} aria-label={`Прослушать: ${text}`} className="focus-ring flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-serbian-blue text-white"><Volume2 aria-hidden /></button>;
-}
-
 function Narration({ src, label }: { src: string; label: string }) {
   return <div className="mt-5 rounded-xl border-2 border-ink bg-blue-50 p-4 shadow-[3px_3px_0_#202124]">
     <p className="mb-3 flex items-center gap-2 font-black"><Volume2 size={20} aria-hidden /> Послушай объяснение · {label}</p>
@@ -158,11 +145,10 @@ export default function LessonOneGammaExperience() {
 
       <Block number={0} title="Сербский — это легко">
         <h2 className="mt-2 text-3xl font-black">Посмотри, как похоже</h2>
-        <Narration src="/audio/lesson-1/03-cognates.m4a" label="Похожие слова" />
         <img src={media.family} alt="Мама и папа — mama i tata" className="mt-5 aspect-[16/9] w-full rounded-xl border-2 border-ink object-cover" />
-        <Card><div className="flex items-center justify-between gap-3"><div><p className="text-3xl font-black">mama i tata</p><p>мама и папа</p></div><AudioButton text="mama i tata" /></div></Card>
+        <Card><p className="text-3xl font-black">mama i tata</p><p>мама и папа</p></Card>
         <p className="mt-5">Многие семейные слова — когнаты: они похожи по звучанию и значению в славянских языках.</p>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">{[["mama","мама"],["tata","папа"],["brat","брат"],["sestra","сестра"],["baka","бабушка"],["deda","дедушка"]].map(([sr,ru]) => <Card key={sr}><div className="flex items-center justify-between"><p><strong>{sr}</strong><br />{ru}</p><AudioButton text={sr} /></div></Card>)}</div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">{[["mama","мама"],["tata","папа"],["brat","брат"],["sestra","сестра"],["baka","бабушка"],["deda","дедушка"]].map(([sr,ru]) => <Card key={sr}><p><strong>{sr}</strong><br />{ru}</p></Card>)}</div>
         <h3 className="mt-8 text-xl font-black">Быстрая проверка</h3>
         {[
           ["škola","школа",media.schoolDrawing],
@@ -178,7 +164,7 @@ export default function LessonOneGammaExperience() {
         <div className="mt-5 grid gap-4 sm:grid-cols-[180px_1fr] sm:items-center"><img src={media.vuk} alt="Портрет Вука Стефановича Караджича" className="w-full rounded-xl border-2 border-ink" /><div><p className="text-xl font-black">Пиши као што говориш, читај као што је написано!</p><p className="mt-2">Вук Стефановић Караџић не «создал сербский язык»: сербы уже говорили на нём. Он реформировал литературный язык и письмо, приблизив их к живой народной речи.</p></div></div>
         <div className="mt-5 rounded-xl border-2 border-ink bg-mint/25 p-5"><p className="font-black">Что именно изменилось?</p><ol className="mt-2 list-decimal space-y-2 pl-6"><li>За основу литературного языка взята живая народная речь.</li><li>Убраны лишние старые буквы, которые не соответствовали отдельным звукам.</li><li>Добавлены или закреплены буквы для сербских звуков: Ј, Љ, Њ, Ћ, Ђ, Џ.</li><li>Получился принцип «один звук — одна буква».</li></ol></div>
         <img src={media.oldAlphabet} alt="Буквы старой кириллицы до реформы Вука Караджича" className="mt-5 w-full rounded-xl border-2 border-ink bg-white object-contain" />
-        <div className="mt-6 space-y-3">{letters.map(([cy,lat,example,sound]) => <Card key={cy}><div className="flex items-center justify-between gap-3"><div><p className="text-2xl font-black">{cy} / {lat}</p><p>{example} · слышим {sound}</p></div><AudioButton text={example} /></div></Card>)}</div>
+        <div className="mt-6 space-y-3">{letters.map(([cy,lat,example,sound]) => <Card key={cy}><p className="text-2xl font-black">{cy} / {lat}</p><p>{example} · слышим {sound}</p></Card>)}</div>
         <h3 className="mt-8 text-xl font-black">Соедини звук и букву</h3>
         {[["Й","Ј"],["ЛЬ","Љ"],["НЬ","Њ"],["ДЖ","Џ"]].map(([sound,correct]) => <div key={sound} className="mt-4"><p className="font-black">Слышим {sound}</p><div className="mt-2 flex gap-2">{["Ј","Љ","Њ","Џ"].map(option => <button key={option} onClick={() => { setLetterAnswers({...letterAnswers,[sound]:option}); setChecked(old => ({...old, 1:false})); }} className={`min-h-12 flex-1 rounded-xl border-2 border-ink font-black ${answerClass(letterAnswers[sound]===option, option===correct, 1)}`}>{option}</button>)}</div>{checked[1] && letterAnswers[sound] && <p className={`mt-2 rounded-lg p-3 text-sm ${letterAnswers[sound] === correct ? "bg-mint/30" : "bg-red-50"}`}>Звук {sound} записывается буквой <strong>{correct}</strong>.</p>}</div>)}
         <Next index={1} />
@@ -207,8 +193,8 @@ export default function LessonOneGammaExperience() {
 
       <Block number={4} title="Поздрави и представљање">
         <h2 className="mt-2 text-3xl font-black">Встреча, знакомство и прощание</h2>
-        {[["Сусрет","Добар дан! Добро јутро! Добро вече! Здраво! Ћао!"],["Представљање","Ја се зовем… Зовем се… Ја сам… Драго ми је!"],["Растанак","Довиђења. Пријатно! Видимо се! Ћао!"]].map(([title,text]) => <div className="mt-4" key={title}><Card><div className="flex items-start justify-between gap-3"><div><p className="text-xl font-black">{title}</p><p>{text}</p></div><AudioButton text={text} /></div></Card></div>)}
-        <Card><p className="font-black">Пример дијалога</p><p className="mt-2">— Како се зовеш?<br />— Ја се зовем Света. А ти?<br />— Зовем се Сева. Драго ми је!</p><button onClick={() => say("Како се зовеш? Ја се зовем Света. А ти? Зовем се Сева. Драго ми је!")} className="mt-4 min-h-12 w-full rounded-xl border-2 border-ink bg-plum font-black text-white">Прослушать диалог</button></Card>
+        {[["Сусрет","Добар дан! Добро јутро! Добро вече! Здраво! Ћао!"],["Представљање","Ја се зовем… Зовем се… Ја сам… Драго ми је!"],["Растанак","Довиђења. Пријатно! Видимо се! Ћао!"]].map(([title,text]) => <div className="mt-4" key={title}><Card><p className="text-xl font-black">{title}</p><p>{text}</p></Card></div>)}
+        <Card><p className="font-black">Пример дијалога</p><p className="mt-2">— Како се зовеш?<br />— Ја се зовем Света. А ти?<br />— Зовем се Сева. Драго ми је!</p></Card>
         <p className="mt-4 rounded-xl bg-blue-50 p-4"><strong>Как строится знакомство:</strong> приветствие → имя → вопрос <em>А ти?</em> → фраза <em>Драго ми је</em>. «Здраво» нейтрально, «ћао» более неформально.</p>
         <Next index={4} />
       </Block>
@@ -225,7 +211,7 @@ export default function LessonOneGammaExperience() {
       <Block number={6} title="Рассказываю о себе">
         <h2 className="mt-2 text-3xl font-black">От имени к профессии</h2>
         <p className="mt-3">Прочитай все шесть текстов. Заметь повторяющиеся конструкции: имя, возраст, город, учёба или работа.</p>
-        <div className="mt-5 space-y-4">{people.map((person, index) => <Card key={person.name}><div className="flex items-start justify-between gap-3"><div><p className="text-xl font-black">{index + 1}. {person.name}</p><p className="mt-2">{person.text}</p></div><AudioButton text={person.text} /></div></Card>)}</div>
+        <div className="mt-5 space-y-4">{people.map((person, index) => <Card key={person.name}><p className="text-xl font-black">{index + 1}. {person.name}</p><p className="mt-2">{person.text}</p></Card>)}</div>
         <div className="mt-5 rounded-xl border-2 border-ink bg-blue-50 p-5"><p className="font-black">Как читать эти тексты</p><p className="mt-2"><em>Ја сам / Зовем се</em> — имя; <em>Имам … година</em> — возраст; <em>Ја сам из… / Живим у…</em> — происхождение и место жительства; <em>Студирам / Радим / Идем у школу</em> — занятие.</p></div>
         <h3 className="mt-7 text-xl font-black">Скажи о себе вслух</h3><p>Ja sam ____. Ja sam iz ____. Imam ____ godina. Ja sam ____.</p>
         <p className="mt-3 text-sm text-ink/65">Микрофон не нужен: произнеси четыре фразы, затем повтори без шаблона.</p>
