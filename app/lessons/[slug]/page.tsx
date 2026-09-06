@@ -258,3 +258,20 @@ export default async function LessonPage({ params }: LessonPageProps) {
                 уже узнаёшь без перевода.
               </p>
             </div>
+            <div className="overflow-hidden rounded-[28px] border-2 border-[#16265f] bg-[#f8f1e7] shadow-[8px_8px_0_#16265f]">
+              <Image
+                src="/images/skolnaya-leksika.png"
+                alt="Школьная лексика на сербском языке: 16 иллюстрированных карточек"
+                width={1365}
+                height={2048}
+                className="h-auto w-full"
+                priority
+              />
+            </div>
+            </div>
+          </section>
+        </>
+      ) : null}
+    </>
+  );
+}
