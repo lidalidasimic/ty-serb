@@ -17,12 +17,12 @@ const sections = [
 ];
 
 const letters = [
-  ["Ј", "j", "јабука", "Й"],
-  ["Љ", "lj", "љубав", "ЛЬ"],
-  ["Њ", "nj", "његов", "НЬ"],
-  ["Ћ", "ć", "ноћ", "мягкое ТЧ"],
-  ["Ђ", "đ", "Ђорђе", "мягкое ДЖ"],
-  ["Џ", "dž", "џем", "ДЖ"],
+  ["Ј", "j", "јабука", "Й", "/audio/lesson-1/letters/j-jabuka.m4a"],
+  ["Љ", "lj", "љубав", "ЛЬ", "/audio/lesson-1/letters/lj-ljubav.m4a"],
+  ["Њ", "nj", "његов", "НЬ", "/audio/lesson-1/letters/nj-njegov.m4a"],
+  ["Ћ", "ć", "ноћ", "мягкое ТЧ", "/audio/lesson-1/letters/c-noc.m4a"],
+  ["Ђ", "đ", "Ђорђе", "мягкое ДЖ", "/audio/lesson-1/letters/dj-djordje.m4a"],
+  ["Џ", "dž", "џем", "ДЖ", "/audio/lesson-1/letters/dz-dzem.m4a"],
 ];
 
 const biti = [
@@ -75,6 +75,24 @@ function Narration({ src, label }: { src: string; label: string }) {
       Ваш браузер не поддерживает аудио.
     </audio>
   </div>;
+}
+
+function PronunciationButton({ src, word }: { src: string; word: string }) {
+  const play = () => {
+    const audio = new Audio(src);
+    void audio.play();
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={play}
+      aria-label={`Прослушать произношение слова ${word}`}
+      className="focus-ring flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-serbian-blue text-white"
+    >
+      <Volume2 aria-hidden />
+    </button>
+  );
 }
 
 function Block({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
@@ -164,7 +182,7 @@ export default function LessonOneGammaExperience() {
         <div className="mt-5 grid gap-4 sm:grid-cols-[180px_1fr] sm:items-center"><img src={media.vuk} alt="Портрет Вука Стефановича Караджича" className="w-full rounded-xl border-2 border-ink" /><div><p className="text-xl font-black">Пиши као што говориш, читај као што је написано!</p><p className="mt-2">Вук Стефановић Караџић не «создал сербский язык»: сербы уже говорили на нём. Он реформировал литературный язык и письмо, приблизив их к живой народной речи.</p></div></div>
         <div className="mt-5 rounded-xl border-2 border-ink bg-mint/25 p-5"><p className="font-black">Что именно изменилось?</p><ol className="mt-2 list-decimal space-y-2 pl-6"><li>За основу литературного языка взята живая народная речь.</li><li>Убраны лишние старые буквы, которые не соответствовали отдельным звукам.</li><li>Добавлены или закреплены буквы для сербских звуков: Ј, Љ, Њ, Ћ, Ђ, Џ.</li><li>Получился принцип «один звук — одна буква».</li></ol></div>
         <img src={media.oldAlphabet} alt="Буквы старой кириллицы до реформы Вука Караджича" className="mt-5 w-full rounded-xl border-2 border-ink bg-white object-contain" />
-        <div className="mt-6 space-y-3">{letters.map(([cy,lat,example,sound]) => <Card key={cy}><p className="text-2xl font-black">{cy} / {lat}</p><p>{example} · слышим {sound}</p></Card>)}</div>
+        <div className="mt-6 space-y-3">{letters.map(([cy,lat,example,sound,audioSrc]) => <Card key={cy}><div className="flex items-center justify-between gap-3"><div><p className="text-2xl font-black">{cy} / {lat}</p><p>{example} · слышим {sound}</p></div><PronunciationButton src={audioSrc} word={example} /></div></Card>)}</div>
         <h3 className="mt-8 text-xl font-black">Соедини звук и букву</h3>
         {[["Й","Ј"],["ЛЬ","Љ"],["НЬ","Њ"],["ДЖ","Џ"]].map(([sound,correct]) => <div key={sound} className="mt-4"><p className="font-black">Слышим {sound}</p><div className="mt-2 flex gap-2">{["Ј","Љ","Њ","Џ"].map(option => <button key={option} onClick={() => { setLetterAnswers({...letterAnswers,[sound]:option}); setChecked(old => ({...old, 1:false})); }} className={`min-h-12 flex-1 rounded-xl border-2 border-ink font-black ${answerClass(letterAnswers[sound]===option, option===correct, 1)}`}>{option}</button>)}</div>{checked[1] && letterAnswers[sound] && <p className={`mt-2 rounded-lg p-3 text-sm ${letterAnswers[sound] === correct ? "bg-mint/30" : "bg-red-50"}`}>Звук {sound} записывается буквой <strong>{correct}</strong>.</p>}</div>)}
         <Next index={1} />
