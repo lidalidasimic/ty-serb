@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
@@ -196,6 +197,64 @@ export default async function LessonPage({ params }: LessonPageProps) {
           </div>
         </div>
       </section>
-    </>
-  );
-}
+      {lesson.number === 1 ? (
+        <>
+          <section className="bg-[#f8f1e7] px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+            <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,440px)_1fr] lg:items-center">
+              <div className="mx-auto w-full max-w-[440px]">
+                <div className="overflow-hidden rounded-[32px] border-2 border-[#16265f] bg-[#16265f] shadow-[8px_8px_0_#e83d34]">
+                  <video
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="aspect-square w-full object-cover"
+                    aria-label="Приветствие Лидии и инструкция к первому уроку"
+                  >
+                    <source
+                      src="/videos/introductorytyserbl1.mp4"
+                      type="video/mp4"
+                    />
+                    Ваш браузер не поддерживает видео.
+                  </video>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.2em] text-[#e83d34]">
+                  Dobro došli!
+                </p>
+                <h2 className="mt-3 text-4xl font-black uppercase leading-[0.95] text-[#16265f] sm:text-6xl">
+                  Ćao! Ja sam Lidija.
+                </h2>
+                <p className="mt-6 max-w-xl text-lg leading-8 text-[#16265f]/80">
+                  Посмотри короткое приветствие перед началом. Проходи урок сверху
+                  вниз, повторяй сербские слова вслух и выполняй задания по порядку.
+                  Тебе не нужно ничего знать заранее.
+                </p>
+                <a
+                  href="#skolska-leksika"
+                  className="focus-ring mt-7 inline-flex rounded-full bg-[#e83d34] px-6 py-3 font-black uppercase tracking-wide text-white transition hover:-translate-y-0.5"
+                >
+                  Počni lekciju ↓
+                </a>
+              </div>
+            </div>
+          </section>
+          <section
+            id="skolska-leksika"
+            className="scroll-mt-6 bg-[#f8f1e7] px-4 pb-12 pt-4 sm:px-6 sm:pb-16 lg:px-8"
+          >
+            <div className="mx-auto max-w-6xl">
+            <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.18em] text-serbian-red">
+                  Rečnik · словарь
+                </p>
+                <h2 className="mt-2 text-3xl font-black uppercase leading-none text-[#16265f] sm:text-5xl">
+                  Školska leksika
+                </h2>
+              </div>
+              <p className="max-w-md text-base leading-7 text-[#16265f]/75">
+                Посмотри на карточки, прочитай слова вслух и отметь те, которые
+                уже узнаёшь без перевода.
+              </p>
+            </div>
