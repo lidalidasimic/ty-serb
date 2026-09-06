@@ -80,6 +80,16 @@ function AudioButton({ text }: { text: string }) {
   return <button onClick={() => say(text)} aria-label={`Прослушать: ${text}`} className="focus-ring flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-serbian-blue text-white"><Volume2 aria-hidden /></button>;
 }
 
+function Narration({ src, label }: { src: string; label: string }) {
+  return <div className="mt-5 rounded-xl border-2 border-ink bg-blue-50 p-4 shadow-[3px_3px_0_#202124]">
+    <p className="mb-3 flex items-center gap-2 font-black"><Volume2 size={20} aria-hidden /> Послушай объяснение · {label}</p>
+    <audio controls preload="none" className="w-full" aria-label={label}>
+      <source src={src} type="audio/mp4" />
+      Ваш браузер не поддерживает аудио.
+    </audio>
+  </div>;
+}
+
 function Block({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
   return <section id={`gamma-step-${number}`} className="scroll-mt-24 border-t-2 border-ink py-10">
     <p className="font-black uppercase tracking-[.14em] text-serbian-red">{number + 1}. {title}</p>
@@ -143,10 +153,12 @@ export default function LessonOneGammaExperience() {
         <p className="font-black uppercase tracking-[.15em] text-serbian-red">Учимо српски са Лидијом Симић!</p>
         <h1 className="mt-3 text-4xl font-black leading-tight">Srpski nije strašan, srpski je lak!</h1>
         <p className="mt-4 text-xl">Сербский — это не страшно, это легко. Начнём с того, что уже понятно без перевода.</p>
+        <Narration src="/audio/lesson-1/02-introduction.m4a" label="Вступление к уроку" />
       </header>
 
       <Block number={0} title="Сербский — это легко">
         <h2 className="mt-2 text-3xl font-black">Посмотри, как похоже</h2>
+        <Narration src="/audio/lesson-1/03-cognates.m4a" label="Похожие слова" />
         <img src={media.family} alt="Мама и папа — mama i tata" className="mt-5 aspect-[16/9] w-full rounded-xl border-2 border-ink object-cover" />
         <Card><div className="flex items-center justify-between gap-3"><div><p className="text-3xl font-black">mama i tata</p><p>мама и папа</p></div><AudioButton text="mama i tata" /></div></Card>
         <p className="mt-5">Многие семейные слова — когнаты: они похожи по звучанию и значению в славянских языках.</p>
@@ -162,6 +174,7 @@ export default function LessonOneGammaExperience() {
 
       <Block number={1} title="Вук Караджич и фонетический принцип">
         <h2 className="mt-2 text-3xl font-black">Пиши као што говориш</h2>
+        <Narration src="/audio/lesson-1/04-vuk-karadzic.m4a" label="Вук Караджич и фонетический принцип" />
         <div className="mt-5 grid gap-4 sm:grid-cols-[180px_1fr] sm:items-center"><img src={media.vuk} alt="Портрет Вука Стефановича Караджича" className="w-full rounded-xl border-2 border-ink" /><div><p className="text-xl font-black">Пиши као што говориш, читај као што је написано!</p><p className="mt-2">Вук Стефановић Караџић не «создал сербский язык»: сербы уже говорили на нём. Он реформировал литературный язык и письмо, приблизив их к живой народной речи.</p></div></div>
         <div className="mt-5 rounded-xl border-2 border-ink bg-mint/25 p-5"><p className="font-black">Что именно изменилось?</p><ol className="mt-2 list-decimal space-y-2 pl-6"><li>За основу литературного языка взята живая народная речь.</li><li>Убраны лишние старые буквы, которые не соответствовали отдельным звукам.</li><li>Добавлены или закреплены буквы для сербских звуков: Ј, Љ, Њ, Ћ, Ђ, Џ.</li><li>Получился принцип «один звук — одна буква».</li></ol></div>
         <img src={media.oldAlphabet} alt="Буквы старой кириллицы до реформы Вука Караджича" className="mt-5 w-full rounded-xl border-2 border-ink bg-white object-contain" />
@@ -173,6 +186,7 @@ export default function LessonOneGammaExperience() {
 
       <Block number={2} title="Диалекты сербского языка">
         <h2 className="mt-2 text-3xl font-black">млеко, млијеко или млико?</h2>
+        <Narration src="/audio/lesson-1/05-dialects.m4a" label="Диалекты сербского языка" />
         <p className="mt-4">Это разные рефлексы древнего ѣ (ять). В живой речи он произносился по-разному, поэтому письмо стало следовать произношению.</p>
         <img src={media.dialectMap} alt="Карта сербских штокавских диалектов в Сербии, Боснии и Герцеговине, Черногории и Хорватии" className="mt-5 w-full rounded-xl border-2 border-ink" />
         <div className="mt-5 space-y-3"><Card><strong>Екавица</strong><p>млеко, дете · преобладает в Сербии</p></Card><Card><strong>Јекавица</strong><p>млијеко, дијете · Черногория, Босния и часть региона</p></Card><Card><strong>Икавица</strong><p>млико · отдельные региональные говоры</p></Card></div>
@@ -184,7 +198,9 @@ export default function LessonOneGammaExperience() {
       <Block number={3} title="Ћирилица vs. латиница">
         <h2 className="mt-2 text-3xl font-black">Один язык — два письма</h2>
         <p className="mt-4">Сербский использует кириллицу (азбука) и латиницу (абецеда). Умение узнавать обе системы понадобится с первого дня.</p>
+        <Narration src="/audio/lesson-1/06-azbuka-abeceda.m4a" label="Азбука и абецеда" />
         <div className="mt-5 space-y-6"><figure><img src={media.cyrillic} alt="Полная иллюстрированная сербская кириллица — азбука" className="w-full rounded-xl border-2 border-ink bg-white" /><figcaption className="mt-2 text-center font-black">Ћирилица · азбука</figcaption></figure><figure><img src={media.latin} alt="Полная иллюстрированная сербская латиница — абецеда" className="w-full rounded-xl border-2 border-ink bg-white" /><figcaption className="mt-2 text-center font-black">Latinica · abeceda</figcaption></figure></div>
+        <Narration src="/audio/lesson-1/07-vazno.m4a" label="Важно" />
         <div className="mt-6 rounded-xl border-2 border-ink bg-mint/25 p-5"><p className="font-black">Важные правила из лекции</p><ul className="mt-2 list-disc pl-6"><li>Пишем как говорим, читаем как написано.</li><li>Ударение не падает на последний слог.</li><li>Не бойся вариантов произношения: диалекты — часть живого языка.</li></ul></div>
         <Next index={3} />
       </Block>
