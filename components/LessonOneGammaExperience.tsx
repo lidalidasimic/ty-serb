@@ -110,6 +110,29 @@ function PronunciationButton({ src, word }: { src: string; word: string }) {
   );
 }
 
+function LearningExercise({ title, appId }: { title: string; appId: string }) {
+  const url = `https://learningapps.org/watch?v=${appId}`;
+  return (
+    <div className="mt-6 overflow-hidden rounded-xl border-2 border-ink bg-white shadow-[3px_3px_0_#202124]">
+      <div className="border-b-2 border-ink bg-serbian-blue p-4 text-white">
+        <p className="text-xl font-black">{title}</p>
+      </div>
+      <iframe
+        src={url}
+        title={title}
+        loading="lazy"
+        allowFullScreen
+        className="h-[620px] w-full bg-white sm:h-[700px]"
+      />
+      <div className="border-t-2 border-ink p-3 text-center">
+        <a href={url} target="_blank" rel="noreferrer" className="focus-ring inline-flex min-h-11 items-center rounded-full border-2 border-ink bg-white px-4 font-black text-serbian-blue">
+          Открыть упражнение отдельно ↗
+        </a>
+      </div>
+    </div>
+  );
+}
+
 function Block({ number, title, children, active }: { number: number; title: string; children: React.ReactNode; active: boolean }) {
   if (!active) return null;
   return <section id={`gamma-step-${number}`} className="scroll-mt-24 border-t-2 border-ink py-10">
@@ -124,7 +147,6 @@ export default function LessonOneGammaExperience() {
   const [cognateAnswers, setCognateAnswers] = useState<Record<string, string>>({});
   const [letterAnswers, setLetterAnswers] = useState<Record<string, string>>({});
   const [bitiAnswers, setBitiAnswers] = useState<Record<string, string>>({});
-  const [genderAnswers, setGenderAnswers] = useState<Record<string, string>>({});
   const [schoolAnswers, setSchoolAnswers] = useState<Record<string, string>>({});
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [done, setDone] = useState(false);
@@ -154,7 +176,7 @@ export default function LessonOneGammaExperience() {
     true,
     [["Ја","САМ"],["Ти","СИ"],["Она","ЈЕ"],["Ми","СМО"]].every(([pronoun, answer]) => bitiAnswers[pronoun] === answer),
     schoolWords.every(([, word]) => schoolAnswers[word] === word),
-    [["школа","женский"],["посао","мужской"],["море","средний"],["љубав","женский"]].every(([word, answer]) => genderAnswers[word] === answer),
+    true,
   ];
 
   const finish = (index: number) => {
@@ -283,15 +305,8 @@ export default function LessonOneGammaExperience() {
       <Block number={7} title="Род именица у једнини" active={currentStep === 7}>
         <h2 className="mt-2 text-3xl font-black">Род существительных</h2>
         <Narration src="/audio/lesson-1/13-gender.m4a" label="Род существительных" transcript="В сербском языке существительные имеют мужской, женский или средний род. Мужской род обычно заканчивается на согласную, но встречаются слова на -о и -а. Женский род обычно заканчивается на -а, однако некоторые слова заканчиваются на согласную или -о. Средний род чаще всего имеет окончания -о и -е." />
-        <div className="mt-5 space-y-4">
-          {[
-            { pronoun:"ОН", gender:"мужской род", word:"ђак", ending:"Обычно согласная. Некоторые слова заканчиваются на -о или -а.", examples:"час, сто, посао, комшија, колега, такси", color:"bg-serbian-blue" },
-            { pronoun:"ОНА", gender:"женский род", word:"књига", ending:"Обычно -а. Некоторые слова заканчиваются на согласную или -о.", examples:"свеска, реч, ствар, со", color:"bg-serbian-red" },
-            { pronoun:"ОНО", gender:"средний род", word:"слово", ending:"Окончания -о и -е.", examples:"место, име, презиме", color:"bg-plum" },
-          ].map(item => <article key={item.pronoun} className="overflow-hidden rounded-xl border-2 border-ink bg-white shadow-[3px_3px_0_#202124]"><div className={`${item.color} p-4 text-white`}><p className="text-sm font-black uppercase tracking-[.14em]">{item.gender}</p><p className="mt-1 text-4xl font-black">{item.pronoun}</p></div><div className="p-5"><p className="text-3xl font-black">{item.word}</p><p className="mt-1 text-ink/65">главный пример</p><p className="mt-4"><strong>Окончания:</strong> {item.ending}</p><p className="mt-3"><strong>Ещё примеры:</strong> {item.examples}</p></div></article>)}
-        </div>
-        <div className="mt-5 rounded-xl border-2 border-ink bg-yellow-50 p-5"><p className="font-black">Исключения</p><p>Мужской род на -о и -а: Марко, Тома, судија, посао.<br />Женский род на согласную или -о: љубав, радост, ноћ, мисао, со.</p></div>
-        {[["школа","женский"],["посао","мужской"],["море","средний"],["љубав","женский"]].map(([word,correct]) => <div className="mt-4" key={word}><p className="font-black">{word}</p><div className="mt-2 grid grid-cols-3 gap-2">{["мужской","женский","средний"].map(gender => <button key={gender} onClick={() => { setGenderAnswers({...genderAnswers,[word]:gender}); setChecked(old => ({...old, 7:false})); }} className={`min-h-12 rounded-xl border-2 border-ink px-2 ${answerClass(genderAnswers[word]===gender, gender===correct, 7)}`}>{gender}</button>)}</div>{checked[7] && genderAnswers[word] && <p className={`mt-2 rounded-lg p-3 text-sm ${genderAnswers[word] === correct ? "bg-mint/30" : "bg-red-50"}`}><strong>{word}</strong> — {correct} род. Смотри на окончание, но помни об исключениях из карточки выше.</p>}</div>)}
+        <img src="/images/rod-imenica.png" alt="Инфографика: мужской, женский и средний род существительных в единственном числе" className="mt-6 w-full rounded-xl border-2 border-ink bg-white" />
+        <LearningExercise title="Упражнение: род существительных" appId="pam6kysj526" />
         <Next index={7} />
       </Block>
 
@@ -299,6 +314,7 @@ export default function LessonOneGammaExperience() {
         <p className="font-black uppercase tracking-[.14em] text-serbian-red">Домашний задание</p>
         <h2 className="mt-2 text-3xl font-black">Закрепи урок</h2>
         <Card><ol className="list-decimal space-y-3 pl-6"><li><strong>Новые слова:</strong> выпиши слова, которые хочешь использовать.</li><li><strong>Напиши короткий текст о себе:</strong> имя, город, возраст, профессия или учёба, один близкий человек.</li><li><strong>Прочитай текст вслух</strong> сначала с подсказкой, затем без неё.</li></ol></Card>
+        <LearningExercise title="Повторение: новые слова урока" appId="po4gcggtv26" />
         <button onClick={() => setDone(true)} className="focus-ring mt-7 min-h-12 w-full rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Завершить урок</button>
         {done && <div className="mt-5 rounded-xl border-2 border-ink bg-mint/40 p-6 text-center"><Check className="mx-auto" size={40} /><h3 className="mt-2 text-3xl font-black">Први час је готов!</h3><p>Структура лекции пройдена полностью. Сачувај текст о себи — он понадобится дальше.</p></div>}
       </section> : null}
