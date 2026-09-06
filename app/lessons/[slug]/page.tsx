@@ -231,7 +231,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
                   href="#gamma-step-0"
                   className="focus-ring mt-7 inline-flex rounded-full bg-[#e83d34] px-6 py-3 font-black uppercase tracking-wide text-white transition hover:-translate-y-0.5"
                 >
-                  Počni lekciju ↓
+                  Hajde da počnemo ↓
                 </a>
               </div>
             </div>

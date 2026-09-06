@@ -69,11 +69,11 @@ const schoolWords = [
 
 function Narration({ src, label, transcript, bonus = false }: { src: string; label: string; transcript: string; bonus?: boolean }) {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [speed, setSpeed] = useState<1 | 2>(1);
+  const [speed, setSpeed] = useState<1 | 1.5>(1);
   const [showTranscript, setShowTranscript] = useState(false);
 
   const toggleSpeed = () => {
-    const nextSpeed = speed === 1 ? 2 : 1;
+    const nextSpeed = speed === 1 ? 1.5 : 1;
     setSpeed(nextSpeed);
     if (audioRef.current) audioRef.current.playbackRate = nextSpeed;
   };
@@ -85,7 +85,7 @@ function Narration({ src, label, transcript, bonus = false }: { src: string; lab
       Ваш браузер не поддерживает аудио.
     </audio>
     <div className="mt-3 flex flex-wrap gap-2">
-      <button type="button" onClick={toggleSpeed} aria-label={`Скорость воспроизведения ${speed}x`} className="focus-ring min-h-11 rounded-full border-2 border-ink bg-white px-4 font-black">{speed}× / {speed === 1 ? "2×" : "1×"}</button>
+      <button type="button" onClick={toggleSpeed} aria-label={`Скорость воспроизведения ${speed}x`} className="focus-ring min-h-11 rounded-full border-2 border-ink bg-white px-4 font-black">{speed}× / {speed === 1 ? "1,5×" : "1×"}</button>
       <button type="button" onClick={() => setShowTranscript(value => !value)} aria-expanded={showTranscript} className="focus-ring min-h-11 rounded-full border-2 border-ink bg-white px-4 font-black">{showTranscript ? "Скрыть текст" : "Показать текст"}</button>
     </div>
     {showTranscript ? <div className="mt-3 rounded-lg border-2 border-ink/20 bg-white p-4 whitespace-pre-line"><p className="text-sm font-black uppercase tracking-[.12em] text-ink/60">Текст аудио</p><p className="mt-2">{transcript}</p></div> : null}
@@ -110,7 +110,8 @@ function PronunciationButton({ src, word }: { src: string; word: string }) {
   );
 }
 
-function Block({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
+function Block({ number, title, children, active }: { number: number; title: string; children: React.ReactNode; active: boolean }) {
+  if (!active) return null;
   return <section id={`gamma-step-${number}`} className="scroll-mt-24 border-t-2 border-ink py-10">
     <p className="font-black uppercase tracking-[.14em] text-serbian-red">{number + 1}. {title}</p>
     {children}
@@ -118,6 +119,7 @@ function Block({ number, title, children }: { number: number; title: string; chi
 }
 
 export default function LessonOneGammaExperience() {
+  const [currentStep, setCurrentStep] = useState(0);
   const [completed, setCompleted] = useState<number[]>([]);
   const [cognateAnswers, setCognateAnswers] = useState<Record<string, string>>({});
   const [letterAnswers, setLetterAnswers] = useState<Record<string, string>>({});
@@ -139,6 +141,11 @@ export default function LessonOneGammaExperience() {
     localStorage.setItem(KEY, JSON.stringify({ completed, done }));
   }, [completed, done]);
 
+  useEffect(() => {
+    if (currentStep === 0) return;
+    requestAnimationFrame(() => document.getElementById(`gamma-step-${currentStep}`)?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }, [currentStep]);
+
   const results = [
     ["škola", "gimnazija", "internet"].every(word => cognateAnswers[word] === "похоже на русское"),
     [["Й","Ј"],["ЛЬ","Љ"],["НЬ","Њ"],["ДЖ","Џ"]].every(([sound, answer]) => letterAnswers[sound] === answer),
@@ -156,7 +163,7 @@ export default function LessonOneGammaExperience() {
   };
 
   const Card = ({ children }: { children: React.ReactNode }) => <div className="rounded-xl border-2 border-ink bg-white p-5 shadow-[3px_3px_0_#202124]">{children}</div>;
-  const Next = ({ index }: { index: number }) => <div className="mt-7"><button onClick={() => finish(index)} className="focus-ring min-h-12 w-full rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Проверить</button>{checked[index] && <p role="status" aria-live="polite" className={`mt-3 rounded-xl border-2 border-ink p-3 text-center font-black ${results[index] ? "bg-mint/50" : "bg-red-100 text-red-900"}`}>{results[index] ? "Всё правильно ✓ Раздел пройден." : "Есть ошибка. Красным отмечено, что нужно исправить — затем проверь ещё раз."}</p>}</div>;
+  const Next = ({ index }: { index: number }) => <div className="mt-7"><div className="grid gap-3 sm:grid-cols-2"><button onClick={() => finish(index)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Проверить</button><button onClick={() => setCurrentStep(index + 1)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Дальше →</button></div>{checked[index] && <p role="status" aria-live="polite" className={`mt-3 rounded-xl border-2 border-ink p-3 text-center font-black ${results[index] ? "bg-mint/50" : "bg-red-100 text-red-900"}`}>{results[index] ? "Всё правильно ✓ Раздел пройден." : "Есть ошибка. Красным отмечено, что нужно исправить — затем проверь ещё раз."}</p>}</div>;
 
   const answerClass = (selected: boolean, correct: boolean, section: number) => selected
     ? checked[section] ? (correct ? "border-green-700 bg-green-200 text-green-950" : "border-red-700 bg-red-100 text-red-900") : "bg-blue-50"
@@ -176,7 +183,7 @@ export default function LessonOneGammaExperience() {
         <Narration src="/audio/lesson-1/02-introduction.m4a" label="Вступление к уроку" transcript="Добро пожаловать на первый урок. Сербский — это не страшно, сербский — это легко. Начнём с того, что уже можно понять без перевода." />
       </header>
 
-      <Block number={0} title="Сербский — это легко">
+      <Block number={0} title="Сербский — это легко" active={currentStep === 0}>
         <h2 className="mt-2 text-3xl font-black">Посмотри, как похоже</h2>
         <img src={media.family} alt="Мама и папа — mama i tata" className="mt-5 aspect-[16/9] w-full rounded-xl border-2 border-ink object-cover" />
         <Card><p className="text-3xl font-black">mama i tata</p><p>мама и папа</p></Card>
@@ -191,7 +198,7 @@ export default function LessonOneGammaExperience() {
         <p className="mt-6 rounded-xl bg-mint/30 p-4 font-black">Srpski je prijateljski jezik 😉</p><Next index={0} />
       </Block>
 
-      <Block number={1} title="Вук Караджич и фонетический принцип">
+      <Block number={1} title="Вук Караджич и фонетический принцип" active={currentStep === 1}>
         <h2 className="mt-2 text-3xl font-black">Пиши као што говориш</h2>
         <Narration src="/audio/lesson-1/04-vuk-karadzic.m4a" label="Вук Караджич и фонетический принцип" transcript="Вук Стефановић Караџић не создал сербский язык: сербы уже говорили на нём. Он реформировал литературный язык и письмо, приблизив их к живой народной речи. Главный принцип: ‘Пиши као што говориш, читај као што је написано’ — пиши, как говоришь, и читай, как написано." />
         <div className="mt-5 grid gap-4 sm:grid-cols-[180px_1fr] sm:items-center"><img src={media.vuk} alt="Портрет Вука Стефановича Караджича" className="w-full rounded-xl border-2 border-ink" /><div><p className="text-xl font-black">Пиши као што говориш, читај као што је написано!</p><p className="mt-2">Вук Стефановић Караџић не «создал сербский язык»: сербы уже говорили на нём. Он реформировал литературный язык и письмо, приблизив их к живой народной речи.</p></div></div>
@@ -204,7 +211,7 @@ export default function LessonOneGammaExperience() {
         <Next index={1} />
       </Block>
 
-      <Block number={2} title="Диалекты сербского языка">
+      <Block number={2} title="Диалекты сербского языка" active={currentStep === 2}>
         <h2 className="mt-2 text-3xl font-black">млеко, млијеко или млико?</h2>
         <Narration src="/audio/lesson-1/05-dialects.m4a" label="Диалекты сербского языка" transcript="Млеко, млијеко и млико — это разные рефлексы древнего звука ѣ, ять. В живой речи он произносился по-разному. В Сербии чаще используется екавица: млеко, дете, лепо. Јекавица распространена в Черногории, Боснии и части региона: млијеко, дијете. Икавица встречается в отдельных региональных говорах: млико." />
         <p className="mt-4">Это разные рефлексы древнего ѣ (ять). В живой речи он произносился по-разному, поэтому письмо стало следовать произношению.</p>
@@ -215,7 +222,7 @@ export default function LessonOneGammaExperience() {
         <Next index={2} />
       </Block>
 
-      <Block number={3} title="Ћирилица vs. латиница">
+      <Block number={3} title="Ћирилица vs. латиница" active={currentStep === 3}>
         <h2 className="mt-2 text-3xl font-black">Один язык — два письма</h2>
         <p className="mt-4">Сербский использует кириллицу (азбука) и латиницу (абецеда). Умение узнавать обе системы понадобится с первого дня.</p>
         <Narration src="/audio/lesson-1/06-azbuka-abeceda.m4a" label="Азбука и абецеда" transcript="Сербский язык использует два равноправных письма: кириллицу — ћирилицу или азбуку — и латиницу, которую называют abeceda. Нужно постепенно научиться узнавать обе системы." />
@@ -225,7 +232,7 @@ export default function LessonOneGammaExperience() {
         <Next index={3} />
       </Block>
 
-      <Block number={4} title="Поздрави и представљање">
+      <Block number={4} title="Поздрави и представљање" active={currentStep === 4}>
         <h2 className="mt-2 text-3xl font-black">Встреча, знакомство и прощание</h2>
         <Narration src="/audio/lesson-1/08-greetings.m4a" label="Приветствия и знакомство" transcript={'Сусрет: Добар дан! Добро јутро! Добро вече! Здраво! Ћао!\n\nПредстављање: Ја се зовем… Зовем се… Ја сам… Драго ми је!\n\nРастанак: Довиђења. Пријатно! Видимо се! Ћао!'} />
         {[["Сусрет","Добар дан! Добро јутро! Добро вече! Здраво! Ћао!"],["Представљање","Ја се зовем… Зовем се… Ја сам… Драго ми је!"],["Растанак","Довиђења. Пријатно! Видимо се! Ћао!"]].map(([title,text]) => <div className="mt-4" key={title}><Card><p className="text-xl font-black">{title}</p><p>{text}</p></Card></div>)}
@@ -234,7 +241,7 @@ export default function LessonOneGammaExperience() {
         <Next index={4} />
       </Block>
 
-      <Block number={5} title="Глагол BITI / JESAM">
+      <Block number={5} title="Глагол BITI / JESAM" active={currentStep === 5}>
         <h2 className="mt-2 text-3xl font-black">Я есть, ты есть…</h2>
         <Narration src="/audio/lesson-1/09-biti.m4a" label="Глагол BITI / JESAM" transcript={'Ја сам. Ти си. Он, она или оно је. Ми смо. Ви сте. Они, оне или она су.\n\nВ настоящем времени сербский не опускает глагол-связку: Ја сам студент. Она је професорка.'} />
         <div className="mt-5 grid grid-cols-2 gap-3">{biti.map(([pronoun,form]) => <Card key={pronoun}><p>{pronoun}</p><p className="text-2xl font-black">{form}</p></Card>)}</div>
@@ -244,7 +251,7 @@ export default function LessonOneGammaExperience() {
         <Next index={5} />
       </Block>
 
-      <Block number={6} title="Рассказываю о себе">
+      <Block number={6} title="Рассказываю о себе" active={currentStep === 6}>
         <h2 className="mt-2 text-3xl font-black">От имени к профессии</h2>
         <p className="mt-3">Прочитай все шесть текстов. Заметь повторяющиеся конструкции: имя, возраст, город, учёба или работа.</p>
         <div className="mt-5 space-y-4">{people.map((person, index) => <Card key={person.name}><div className="flex items-start justify-between gap-3"><div><p className="text-xl font-black">{index + 1}. {person.name}</p><p className="mt-2">{person.text}</p></div><PronunciationButton src={person.audio} word={`текст о ${person.name}`} /></div></Card>)}</div>
@@ -273,7 +280,7 @@ export default function LessonOneGammaExperience() {
         <div className="mt-5 rounded-xl border-2 border-ink bg-white p-5"><p className="font-black">Текст комикса</p><p className="mt-2">Полина: „Ја сам Полина и ја сам у школи! Али где је моја књига?“<br />Полина: „Здраво, Хари. Ја сам Полина. Не могу да нађем своју књигу…“<br />Хари: „Здраво! Ја се зовем Хари! А ти?“<br />Хари: „Абракадабра!“<br />Хари: „Мислим да то није твоја књига… Извини.“<br />Полина: „Ево је моја књига! Хвала ти, Хари!“<br />Полина: „Мој омиљени предмет је математика, а твој?“<br />Хари: „Нема на чему! Који је твој омиљени предмет? Магија!“</p></div>
       </Block>
 
-      <Block number={7} title="Род именица у једнини">
+      <Block number={7} title="Род именица у једнини" active={currentStep === 7}>
         <h2 className="mt-2 text-3xl font-black">Род существительных</h2>
         <Narration src="/audio/lesson-1/13-gender.m4a" label="Род существительных" transcript="В сербском языке существительные имеют мужской, женский или средний род. Мужской род обычно заканчивается на согласную, но встречаются слова на -о и -а. Женский род обычно заканчивается на -а, однако некоторые слова заканчиваются на согласную или -о. Средний род чаще всего имеет окончания -о и -е." />
         <div className="mt-5 space-y-4">
@@ -288,13 +295,13 @@ export default function LessonOneGammaExperience() {
         <Next index={7} />
       </Block>
 
-      <section id="gamma-step-8" className="border-t-2 border-ink py-10">
+      {currentStep === 8 ? <section id="gamma-step-8" className="scroll-mt-24 border-t-2 border-ink py-10">
         <p className="font-black uppercase tracking-[.14em] text-serbian-red">Домашний задание</p>
         <h2 className="mt-2 text-3xl font-black">Закрепи урок</h2>
         <Card><ol className="list-decimal space-y-3 pl-6"><li><strong>Новые слова:</strong> выпиши слова, которые хочешь использовать.</li><li><strong>Напиши короткий текст о себе:</strong> имя, город, возраст, профессия или учёба, один близкий человек.</li><li><strong>Прочитай текст вслух</strong> сначала с подсказкой, затем без неё.</li></ol></Card>
         <button onClick={() => setDone(true)} className="focus-ring mt-7 min-h-12 w-full rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Завершить урок</button>
         {done && <div className="mt-5 rounded-xl border-2 border-ink bg-mint/40 p-6 text-center"><Check className="mx-auto" size={40} /><h3 className="mt-2 text-3xl font-black">Први час је готов!</h3><p>Структура лекции пройдена полностью. Сачувај текст о себи — он понадобится дальше.</p></div>}
-      </section>
+      </section> : null}
     </div>
   </div>;
 }
