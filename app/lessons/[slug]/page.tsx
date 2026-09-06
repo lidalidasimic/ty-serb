@@ -12,6 +12,7 @@ import {
 import { getLessonBySlug, lessons } from "@/data/lessons";
 import { canOpenLesson } from "@/lib/access-control";
 import { getCurrentUser, logActivity } from "@/lib/supabase-server";
+import LessonOneGammaExperience from "@/components/LessonOneGammaExperience";
 
 type LessonPageProps = {
   params: Promise<{
@@ -86,6 +87,10 @@ export default async function LessonPage({ params }: LessonPageProps) {
     lessonSlug: lesson.slug,
     actionType: "lesson_opened",
   });
+
+  if (lesson.number === 1) {
+    return <LessonOneGammaExperience />;
+  }
 
   const isReady = lesson.status === "готово";
   const hasWorksheet = lesson.worksheetLink.trim().length > 0;

@@ -1,0 +1,259 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Check, Volume2 } from "lucide-react";
+import { cyrillicAlphabetImage, latinAlphabetImage } from "@/data/alphabet-images";
+
+const KEY = "ty-serb:lesson-1-gamma:v1";
+const sections = [
+  "Сербский — это легко",
+  "Вук Караджич",
+  "Диалекты",
+  "Два алфавита",
+  "Приветствия",
+  "Глагол BITI",
+  "Рассказываю о себе",
+  "Род существительных",
+];
+
+const letters = [
+  ["Ј", "j", "јабука", "Й"],
+  ["Љ", "lj", "љубав", "ЛЬ"],
+  ["Њ", "nj", "његов", "НЬ"],
+  ["Ћ", "ć", "ноћ", "мягкое ТЧ"],
+  ["Ђ", "đ", "Ђорђе", "мягкое ДЖ"],
+  ["Џ", "dž", "џем", "ДЖ"],
+];
+
+const biti = [
+  ["Ја", "САМ"], ["Ти", "СИ"], ["Он / Она / Оно", "ЈЕ"],
+  ["Ми", "СМО"], ["Ви", "СТЕ"], ["Они / Оне / Она", "СУ"],
+];
+
+const people = [
+  { name: "Лидија", text: "Ја сам Лидија. Имам двадесет и четири године. Студирам физику. Ја сам професорка српског језика и уметница. Ја сам из Београда, али живим у Русији." },
+  { name: "Ана", text: "Ја сам Ана. Имам двадесет година. Ја сам из Новог Сада. Студирам медицину и живим са сестром." },
+  { name: "Марко", text: "Зовем се Марко. Имам двадесет осам година. Ја сам програмер. Радим од куће и живим у Београду." },
+  { name: "Ирина", text: "Ја сам Ирина. Ја сам из Москве, али сада живим у Нишу. Учим српски и радим у кафићу." },
+  { name: "Никола", text: "Зовем се Никола. Имам седамнаест година. Идем у школу. Волим математику, музику и спорт." },
+  { name: "Милица", text: "Ја сам Милица. Живим у Крагујевцу. Ја сам професорка. Радим у школи и волим свој посао." },
+];
+
+const media = {
+  family: "https://imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/https://cdn.gamma.app/cpl8q973cwg4z5j/de33d26bdd6e4e2ba4208ae569d9f0a7/original/blob.png",
+  schoolDrawing: "https://imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/https://cdn.gamma.app/cpl8q973cwg4z5j/dfcda8bdd6de47e6b14cc6d09ce0b872/original/blob.png",
+  gymnasium: "https://imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/https://cdn.gamma.app/cpl8q973cwg4z5j/d361e35835974b06b84ff5ed1d37ce67/original/blob.png",
+  internet: "https://imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/https://cdn.gamma.app/cpl8q973cwg4z5j/b7ccd8e5834a4bb8ad1d8ee9be08eaeb/original/blob.png",
+  vuk: "https://imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/https://cdn.gamma.app/cpl8q973cwg4z5j/a30a7c650b0943b9b080354f7596689a/original/blob.png",
+  oldAlphabet: "https://imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/https://cdn.gamma.app/cpl8q973cwg4z5j/9e27071e11c54a019c7671854e53c6da/original/blob.png",
+  dialectMap: "https://imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/https://cdn.gamma.app/cpl8q973cwg4z5j/4817125fac824dbda5e439ea6080ddc7/original/blob.png",
+  cyrillic: cyrillicAlphabetImage,
+  latin: latinAlphabetImage,
+  comic: [
+    "https://imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/https://cdn.gamma.app/cpl8q973cwg4z5j/831866931ff04b729a674f6e555a1337/original/blob.png",
+    "https://imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/https://cdn.gamma.app/cpl8q973cwg4z5j/617423c4f3ae4d0f9ab93cf444cfc249/original/blob.png",
+    "https://imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/https://cdn.gamma.app/cpl8q973cwg4z5j/2fd8014b68ca4dd1b278b810b0d76db6/original/blob.png",
+    "https://imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/https://cdn.gamma.app/cpl8q973cwg4z5j/dd0a17cb95db4549b6de030b06d71be9/original/blob.png",
+    "https://imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/https://cdn.gamma.app/cpl8q973cwg4z5j/601184cd42be4ec89c20f1b2a7224442/original/blob.png",
+    "https://imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/https://cdn.gamma.app/cpl8q973cwg4z5j/101a9eb60a414f3197cc053c46a60696/original/blob.png",
+    "https://imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/https://cdn.gamma.app/cpl8q973cwg4z5j/a95b39778ac64ce9bfa5440ff2cc0ccf/original/blob.png",
+  ],
+};
+
+const schoolWords = [
+  ["📓", "свеска", "тетрадь"], ["🪑", "столица", "стул"],
+  ["📚", "књига", "книга"], ["💻", "рачунар", "компьютер"],
+  ["✏️", "оловка", "карандаш"], ["📱", "телефон", "телефон"],
+  ["🔑", "кључ", "ключ"], ["🎒", "торба", "сумка"],
+];
+
+function say(text: string) {
+  if (!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "sr-RS";
+  utterance.rate = 0.84;
+  speechSynthesis.speak(utterance);
+}
+
+function AudioButton({ text }: { text: string }) {
+  return <button onClick={() => say(text)} aria-label={`Прослушать: ${text}`} className="focus-ring flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-serbian-blue text-white"><Volume2 aria-hidden /></button>;
+}
+
+function Block({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
+  return <section id={`gamma-step-${number}`} className="scroll-mt-24 border-t-2 border-ink py-10">
+    <p className="font-black uppercase tracking-[.14em] text-serbian-red">{number + 1}. {title}</p>
+    {children}
+  </section>;
+}
+
+export default function LessonOneGammaExperience() {
+  const [completed, setCompleted] = useState<number[]>([]);
+  const [cognateAnswers, setCognateAnswers] = useState<Record<string, string>>({});
+  const [letterAnswers, setLetterAnswers] = useState<Record<string, string>>({});
+  const [bitiAnswers, setBitiAnswers] = useState<Record<string, string>>({});
+  const [genderAnswers, setGenderAnswers] = useState<Record<string, string>>({});
+  const [schoolAnswers, setSchoolAnswers] = useState<Record<string, string>>({});
+  const [checked, setChecked] = useState<Record<number, boolean>>({});
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    try {
+      const value = JSON.parse(localStorage.getItem(KEY) || "{}");
+      setCompleted(value.completed || []);
+      setDone(Boolean(value.done));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(KEY, JSON.stringify({ completed, done }));
+  }, [completed, done]);
+
+  const results = [
+    ["škola", "gimnazija", "internet"].every(word => cognateAnswers[word] === "похоже на русское"),
+    [["Й","Ј"],["ЛЬ","Љ"],["НЬ","Њ"],["ДЖ","Џ"]].every(([sound, answer]) => letterAnswers[sound] === answer),
+    true,
+    true,
+    true,
+    [["Ја","САМ"],["Ти","СИ"],["Она","ЈЕ"],["Ми","СМО"]].every(([pronoun, answer]) => bitiAnswers[pronoun] === answer),
+    schoolWords.every(([, word]) => schoolAnswers[word] === word),
+    [["школа","женский"],["посао","мужской"],["море","средний"],["љубав","женский"]].every(([word, answer]) => genderAnswers[word] === answer),
+  ];
+
+  const finish = (index: number) => {
+    setChecked(old => ({ ...old, [index]: true }));
+    setCompleted(old => results[index] && !old.includes(index) ? [...old, index] : old.filter(item => item !== index));
+  };
+
+  const Card = ({ children }: { children: React.ReactNode }) => <div className="rounded-xl border-2 border-ink bg-white p-5 shadow-[3px_3px_0_#202124]">{children}</div>;
+  const Next = ({ index }: { index: number }) => <div className="mt-7"><button onClick={() => finish(index)} className="focus-ring min-h-12 w-full rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Проверить</button>{checked[index] && <p role="status" aria-live="polite" className={`mt-3 rounded-xl border-2 border-ink p-3 text-center font-black ${results[index] ? "bg-mint/50" : "bg-red-100 text-red-900"}`}>{results[index] ? "Всё правильно ✓ Раздел пройден." : "Есть ошибка. Красным отмечено, что нужно исправить — затем проверь ещё раз."}</p>}</div>;
+
+  const answerClass = (selected: boolean, correct: boolean, section: number) => selected
+    ? checked[section] ? (correct ? "border-green-700 bg-green-200 text-green-950" : "border-red-700 bg-red-100 text-red-900") : "bg-blue-50"
+    : "bg-white";
+
+  return <main className="bg-[#fffdf8] px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-[640px] text-[17px] leading-7 text-ink">
+      <div className="sticky top-0 z-20 -mx-4 border-b-2 border-ink bg-[#fffdf8]/95 px-4 py-3 backdrop-blur">
+        <div className="flex justify-between gap-3 text-sm font-black"><span>Урок 1 · по структуре лекции</span><span>{completed.length}/8</span></div>
+        <div className="mt-2 grid grid-cols-8 gap-1">{sections.map((name, i) => <div key={name} title={name} className={`h-2 rounded-full border border-ink ${completed.includes(i) ? "bg-serbian-red" : "bg-white"}`} />)}</div>
+      </div>
+
+      <header className="py-10">
+        <p className="font-black uppercase tracking-[.15em] text-serbian-red">Учимо српски са Лидијом Симић!</p>
+        <h1 className="mt-3 text-4xl font-black leading-tight">Srpski nije strašan, srpski je lak!</h1>
+        <p className="mt-4 text-xl">Сербский — это не страшно, это легко. Начнём с того, что уже понятно без перевода.</p>
+      </header>
+
+      <Block number={0} title="Сербский — это легко">
+        <h2 className="mt-2 text-3xl font-black">Посмотри, как похоже</h2>
+        <img src={media.family} alt="Мама и папа — mama i tata" className="mt-5 aspect-[16/9] w-full rounded-xl border-2 border-ink object-cover" />
+        <Card><div className="flex items-center justify-between gap-3"><div><p className="text-3xl font-black">mama i tata</p><p>мама и папа</p></div><AudioButton text="mama i tata" /></div></Card>
+        <p className="mt-5">Многие семейные слова — когнаты: они похожи по звучанию и значению в славянских языках.</p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">{[["mama","мама"],["tata","папа"],["brat","брат"],["sestra","сестра"],["baka","бабушка"],["deda","дедушка"]].map(([sr,ru]) => <Card key={sr}><div className="flex items-center justify-between"><p><strong>{sr}</strong><br />{ru}</p><AudioButton text={sr} /></div></Card>)}</div>
+        <h3 className="mt-8 text-xl font-black">Быстрая проверка</h3>
+        {[
+          ["škola","школа",media.schoolDrawing],
+          ["gimnazija","гимназия",media.gymnasium],
+          ["internet","интернет",media.internet],
+        ].map(([word,ru,src]) => <div key={word} className="mt-4 overflow-hidden rounded-xl border-2 border-ink bg-white shadow-[3px_3px_0_#202124]"><img src={src} alt={`${word} — ${ru}`} className="aspect-[16/8] w-full object-cover" /><div className="p-4"><p className="text-2xl font-black">{word}</p><p>{ru}</p><div className="mt-3 grid grid-cols-2 gap-2">{["похоже на русское","совсем незнакомо"].map(answer => <button key={answer} onClick={() => { setCognateAnswers({...cognateAnswers,[word]:answer}); setChecked(old => ({...old, 0:false})); }} className={`min-h-12 rounded-xl border-2 border-ink px-3 ${answerClass(cognateAnswers[word]===answer, answer==="похоже на русское", 0)}`}>{answer}</button>)}</div>{checked[0] && cognateAnswers[word] && <p className={`mt-3 rounded-lg p-3 text-sm ${cognateAnswers[word] === "похоже на русское" ? "bg-mint/30" : "bg-red-50"}`}><strong>{cognateAnswers[word] === "похоже на русское" ? "Верно:" : "Подсказка:"}</strong> {word} и «{ru}» — родственные слова: форма и значение легко узнаются.</p>}</div></div>)}
+        <p className="mt-6 rounded-xl bg-mint/30 p-4 font-black">Srpski je prijateljski jezik 😉</p><Next index={0} />
+      </Block>
+
+      <Block number={1} title="Вук Караджич и фонетический принцип">
+        <h2 className="mt-2 text-3xl font-black">Пиши као што говориш</h2>
+        <div className="mt-5 grid gap-4 sm:grid-cols-[180px_1fr] sm:items-center"><img src={media.vuk} alt="Портрет Вука Стефановича Караджича" className="w-full rounded-xl border-2 border-ink" /><div><p className="text-xl font-black">Пиши као што говориш, читај као што је написано!</p><p className="mt-2">Вук Стефановић Караџић не «создал сербский язык»: сербы уже говорили на нём. Он реформировал литературный язык и письмо, приблизив их к живой народной речи.</p></div></div>
+        <div className="mt-5 rounded-xl border-2 border-ink bg-mint/25 p-5"><p className="font-black">Что именно изменилось?</p><ol className="mt-2 list-decimal space-y-2 pl-6"><li>За основу литературного языка взята живая народная речь.</li><li>Убраны лишние старые буквы, которые не соответствовали отдельным звукам.</li><li>Добавлены или закреплены буквы для сербских звуков: Ј, Љ, Њ, Ћ, Ђ, Џ.</li><li>Получился принцип «один звук — одна буква».</li></ol></div>
+        <img src={media.oldAlphabet} alt="Буквы старой кириллицы до реформы Вука Караджича" className="mt-5 w-full rounded-xl border-2 border-ink bg-white object-contain" />
+        <div className="mt-6 space-y-3">{letters.map(([cy,lat,example,sound]) => <Card key={cy}><div className="flex items-center justify-between gap-3"><div><p className="text-2xl font-black">{cy} / {lat}</p><p>{example} · слышим {sound}</p></div><AudioButton text={example} /></div></Card>)}</div>
+        <h3 className="mt-8 text-xl font-black">Соедини звук и букву</h3>
+        {[["Й","Ј"],["ЛЬ","Љ"],["НЬ","Њ"],["ДЖ","Џ"]].map(([sound,correct]) => <div key={sound} className="mt-4"><p className="font-black">Слышим {sound}</p><div className="mt-2 flex gap-2">{["Ј","Љ","Њ","Џ"].map(option => <button key={option} onClick={() => { setLetterAnswers({...letterAnswers,[sound]:option}); setChecked(old => ({...old, 1:false})); }} className={`min-h-12 flex-1 rounded-xl border-2 border-ink font-black ${answerClass(letterAnswers[sound]===option, option===correct, 1)}`}>{option}</button>)}</div>{checked[1] && letterAnswers[sound] && <p className={`mt-2 rounded-lg p-3 text-sm ${letterAnswers[sound] === correct ? "bg-mint/30" : "bg-red-50"}`}>Звук {sound} записывается буквой <strong>{correct}</strong>.</p>}</div>)}
+        <Next index={1} />
+      </Block>
+
+      <Block number={2} title="Диалекты сербского языка">
+        <h2 className="mt-2 text-3xl font-black">млеко, млијеко или млико?</h2>
+        <p className="mt-4">Это разные рефлексы древнего ѣ (ять). В живой речи он произносился по-разному, поэтому письмо стало следовать произношению.</p>
+        <img src={media.dialectMap} alt="Карта сербских штокавских диалектов в Сербии, Боснии и Герцеговине, Черногории и Хорватии" className="mt-5 w-full rounded-xl border-2 border-ink" />
+        <div className="mt-5 space-y-3"><Card><strong>Екавица</strong><p>млеко, дете · преобладает в Сербии</p></Card><Card><strong>Јекавица</strong><p>млијеко, дијете · Черногория, Босния и часть региона</p></Card><Card><strong>Икавица</strong><p>млико · отдельные региональные говоры</p></Card></div>
+        <p className="mt-5 rounded-xl border-2 border-ink bg-white p-4"><strong>Разговорное «бре»</strong> добавляет эмоцию: удивление, нетерпение, радость или раздражение. <em>Како си, бре?</em></p>
+        <p className="mt-4 rounded-xl bg-blue-50 p-4"><strong>Главное:</strong> для начала выбираем екавицу: <em>млеко, дете, лепо</em>. Другие формы не являются ошибкой — они подсказывают регион говорящего.</p>
+        <Next index={2} />
+      </Block>
+
+      <Block number={3} title="Ћирилица vs. латиница">
+        <h2 className="mt-2 text-3xl font-black">Один язык — два письма</h2>
+        <p className="mt-4">Сербский использует кириллицу (азбука) и латиницу (абецеда). Умение узнавать обе системы понадобится с первого дня.</p>
+        <div className="mt-5 space-y-6"><figure><img src={media.cyrillic} alt="Полная иллюстрированная сербская кириллица — азбука" className="w-full rounded-xl border-2 border-ink bg-white" /><figcaption className="mt-2 text-center font-black">Ћирилица · азбука</figcaption></figure><figure><img src={media.latin} alt="Полная иллюстрированная сербская латиница — абецеда" className="w-full rounded-xl border-2 border-ink bg-white" /><figcaption className="mt-2 text-center font-black">Latinica · abeceda</figcaption></figure></div>
+        <div className="mt-6 rounded-xl border-2 border-ink bg-mint/25 p-5"><p className="font-black">Важные правила из лекции</p><ul className="mt-2 list-disc pl-6"><li>Пишем как говорим, читаем как написано.</li><li>Ударение не падает на последний слог.</li><li>Не бойся вариантов произношения: диалекты — часть живого языка.</li></ul></div>
+        <Next index={3} />
+      </Block>
+
+      <Block number={4} title="Поздрави и представљање">
+        <h2 className="mt-2 text-3xl font-black">Встреча, знакомство и прощание</h2>
+        {[["Сусрет","Добар дан! Добро јутро! Добро вече! Здраво! Ћао!"],["Представљање","Ја се зовем… Зовем се… Ја сам… Драго ми је!"],["Растанак","Довиђења. Пријатно! Видимо се! Ћао!"]].map(([title,text]) => <div className="mt-4" key={title}><Card><div className="flex items-start justify-between gap-3"><div><p className="text-xl font-black">{title}</p><p>{text}</p></div><AudioButton text={text} /></div></Card></div>)}
+        <Card><p className="font-black">Пример дијалога</p><p className="mt-2">— Како се зовеш?<br />— Ја се зовем Света. А ти?<br />— Зовем се Сева. Драго ми је!</p><button onClick={() => say("Како се зовеш? Ја се зовем Света. А ти? Зовем се Сева. Драго ми је!")} className="mt-4 min-h-12 w-full rounded-xl border-2 border-ink bg-plum font-black text-white">Прослушать диалог</button></Card>
+        <p className="mt-4 rounded-xl bg-blue-50 p-4"><strong>Как строится знакомство:</strong> приветствие → имя → вопрос <em>А ти?</em> → фраза <em>Драго ми је</em>. «Здраво» нейтрально, «ћао» более неформально.</p>
+        <Next index={4} />
+      </Block>
+
+      <Block number={5} title="Глагол BITI / JESAM">
+        <h2 className="mt-2 text-3xl font-black">Я есть, ты есть…</h2>
+        <div className="mt-5 grid grid-cols-2 gap-3">{biti.map(([pronoun,form]) => <Card key={pronoun}><p>{pronoun}</p><p className="text-2xl font-black">{form}</p></Card>)}</div>
+        <h3 className="mt-8 text-xl font-black">Выбери форму</h3>
+        {[["Ја","САМ"],["Ти","СИ"],["Она","ЈЕ"],["Ми","СМО"]].map(([pronoun,correct]) => <div className="mt-4" key={pronoun}><p className="font-black">{pronoun} ___</p><div className="mt-2 grid grid-cols-3 gap-2">{["САМ","СИ","ЈЕ","СМО","СТЕ","СУ"].map(form => <button key={form} onClick={() => { setBitiAnswers({...bitiAnswers,[pronoun]:form}); setChecked(old => ({...old, 5:false})); }} className={`min-h-12 rounded-xl border-2 border-ink font-black ${answerClass(bitiAnswers[pronoun]===form, form===correct, 5)}`}>{form}</button>)}</div>{checked[5] && bitiAnswers[pronoun] && <p className={`mt-2 rounded-lg p-3 text-sm ${bitiAnswers[pronoun] === correct ? "bg-mint/30" : "bg-red-50"}`}><strong>{pronoun} {correct}</strong>. Форма <em>biti</em> меняется вместе с лицом: её нужно согласовать с местоимением.</p>}</div>)}
+        <p className="mt-5 rounded-xl bg-blue-50 p-4"><strong>Важно:</strong> в настоящем времени сербский не опускает связку: <em>Ја сам студент</em>, <em>Она је професорка</em>. По-русски мы говорим «Я студент», но по-сербски форма <em>сам/је</em> обязательна.</p>
+        <Next index={5} />
+      </Block>
+
+      <Block number={6} title="Рассказываю о себе">
+        <h2 className="mt-2 text-3xl font-black">От имени к профессии</h2>
+        <p className="mt-3">Прочитай все шесть текстов. Заметь повторяющиеся конструкции: имя, возраст, город, учёба или работа.</p>
+        <div className="mt-5 space-y-4">{people.map((person, index) => <Card key={person.name}><div className="flex items-start justify-between gap-3"><div><p className="text-xl font-black">{index + 1}. {person.name}</p><p className="mt-2">{person.text}</p></div><AudioButton text={person.text} /></div></Card>)}</div>
+        <div className="mt-5 rounded-xl border-2 border-ink bg-blue-50 p-5"><p className="font-black">Как читать эти тексты</p><p className="mt-2"><em>Ја сам / Зовем се</em> — имя; <em>Имам … година</em> — возраст; <em>Ја сам из… / Живим у…</em> — происхождение и место жительства; <em>Студирам / Радим / Идем у школу</em> — занятие.</p></div>
+        <h3 className="mt-7 text-xl font-black">Скажи о себе вслух</h3><p>Ja sam ____. Ja sam iz ____. Imam ____ godina. Ja sam ____.</p>
+        <p className="mt-3 text-sm text-ink/65">Микрофон не нужен: произнеси четыре фразы, затем повтори без шаблона.</p>
+
+        <h2 className="mt-10 text-3xl font-black">Школьная лексика</h2>
+        <p className="mt-3">Рассмотри иллюстрации и прочитай все слова вслух.</p>
+        <img
+          src="/images/skolnaya-leksika.png"
+          alt="Школьная лексика на сербском языке: 16 иллюстрированных карточек"
+          className="mt-4 w-full rounded-xl border-2 border-ink bg-white"
+        />
+
+        <h3 className="mt-8 text-2xl font-black">Соедини картинку и слово</h3>
+        <p className="mt-2">Для каждого предмета выбери сербское слово.</p>
+        <div className="mt-5 space-y-5">{schoolWords.map(([emoji,word,ru], wordIndex) => { const options = wordIndex < 4 ? schoolWords.slice(0,4) : schoolWords.slice(4); return <div key={word} className="rounded-xl border-2 border-ink bg-white p-4"><p className="text-center"><span className="text-5xl" role="img" aria-label={ru}>{emoji}</span><br /><strong>{ru}</strong></p><div className="mt-3 grid grid-cols-2 gap-2">{options.map(([,option])=><button key={option} onClick={()=>{ setSchoolAnswers({...schoolAnswers,[word]:option}); setChecked(old => ({...old, 6:false})); }} className={`min-h-12 rounded-xl border-2 border-ink px-2 ${answerClass(schoolAnswers[word]===option, option===word, 6)}`}>{option}</button>)}</div>{checked[6] && schoolAnswers[word] && <p className={`mt-3 rounded-lg p-3 text-sm ${schoolAnswers[word] === word ? "bg-mint/30" : "bg-red-50"}`}>{schoolAnswers[word] === word ? "Верно" : "Правильный ответ"}: <strong>{word}</strong> — {ru}.</p>}</div>; })}</div>
+        <Next index={6} />
+
+        <h2 className="mt-10 text-3xl font-black">Полина и Хари Потер у школи</h2>
+        <p className="mt-3">Прочитай комикс по порядку. В нём повторяются слова <strong>школа, књига, торба, предмет</strong> и фразы знакомства.</p>
+        <div className="mt-5 space-y-4">{media.comic.map((src,i)=><figure key={src}><img src={src} alt={["Полина в школе не может найти книгу","Полина знакомится с Хари","Хари колдует и из сумки появляется лягушка","Хари ошибся: книга падает ему на голову","Полина получает свою книгу и благодарит Хари","Полина и Хари говорят о любимых школьных предметах","Хари отвечает: магия"][i]} className="w-full rounded-xl border-2 border-ink bg-white" /><figcaption className="mt-2 text-sm text-ink/65">Кадр {i+1} из 7</figcaption></figure>)}</div>
+        <div className="mt-5 rounded-xl border-2 border-ink bg-white p-5"><p className="font-black">Текст комикса</p><p className="mt-2">Полина: „Ја сам Полина и ја сам у школи! Али где је моја књига?“<br />Полина: „Здраво, Хари. Ја сам Полина. Не могу да нађем своју књигу…“<br />Хари: „Здраво! Ја се зовем Хари! А ти?“<br />Хари: „Абракадабра!“<br />Хари: „Мислим да то није твоја књига… Извини.“<br />Полина: „Ево је моја књига! Хвала ти, Хари!“<br />Полина: „Мој омиљени предмет је математика, а твој?“<br />Хари: „Нема на чему! Који је твој омиљени предмет? Магија!“</p></div>
+      </Block>
+
+      <Block number={7} title="Род именица у једнини">
+        <h2 className="mt-2 text-3xl font-black">Род существительных</h2>
+        <div className="mt-5 space-y-4">
+          {[
+            { pronoun:"ОН", gender:"мужской род", word:"ђак", ending:"Обычно согласная. Некоторые слова заканчиваются на -о или -а.", examples:"час, сто, посао, комшија, колега, такси", color:"bg-serbian-blue" },
+            { pronoun:"ОНА", gender:"женский род", word:"књига", ending:"Обычно -а. Некоторые слова заканчиваются на согласную или -о.", examples:"свеска, реч, ствар, со", color:"bg-serbian-red" },
+            { pronoun:"ОНО", gender:"средний род", word:"слово", ending:"Окончания -о и -е.", examples:"место, име, презиме", color:"bg-plum" },
+          ].map(item => <article key={item.pronoun} className="overflow-hidden rounded-xl border-2 border-ink bg-white shadow-[3px_3px_0_#202124]"><div className={`${item.color} p-4 text-white`}><p className="text-sm font-black uppercase tracking-[.14em]">{item.gender}</p><p className="mt-1 text-4xl font-black">{item.pronoun}</p></div><div className="p-5"><p className="text-3xl font-black">{item.word}</p><p className="mt-1 text-ink/65">главный пример</p><p className="mt-4"><strong>Окончания:</strong> {item.ending}</p><p className="mt-3"><strong>Ещё примеры:</strong> {item.examples}</p></div></article>)}
+        </div>
+        <div className="mt-5 rounded-xl border-2 border-ink bg-yellow-50 p-5"><p className="font-black">Исключения</p><p>Мужской род на -о и -а: Марко, Тома, судија, посао.<br />Женский род на согласную или -о: љубав, радост, ноћ, мисао, со.</p></div>
+        {[["школа","женский"],["посао","мужской"],["море","средний"],["љубав","женский"]].map(([word,correct]) => <div className="mt-4" key={word}><p className="font-black">{word}</p><div className="mt-2 grid grid-cols-3 gap-2">{["мужской","женский","средний"].map(gender => <button key={gender} onClick={() => { setGenderAnswers({...genderAnswers,[word]:gender}); setChecked(old => ({...old, 7:false})); }} className={`min-h-12 rounded-xl border-2 border-ink px-2 ${answerClass(genderAnswers[word]===gender, gender===correct, 7)}`}>{gender}</button>)}</div>{checked[7] && genderAnswers[word] && <p className={`mt-2 rounded-lg p-3 text-sm ${genderAnswers[word] === correct ? "bg-mint/30" : "bg-red-50"}`}><strong>{word}</strong> — {correct} род. Смотри на окончание, но помни об исключениях из карточки выше.</p>}</div>)}
+        <Next index={7} />
+      </Block>
+
+      <section id="gamma-step-8" className="border-t-2 border-ink py-10">
+        <p className="font-black uppercase tracking-[.14em] text-serbian-red">Домашний задание</p>
+        <h2 className="mt-2 text-3xl font-black">Закрепи урок</h2>
+        <Card><ol className="list-decimal space-y-3 pl-6"><li><strong>Новые слова:</strong> выпиши слова, которые хочешь использовать.</li><li><strong>Напиши короткий текст о себе:</strong> имя, город, возраст, профессия или учёба, один близкий человек.</li><li><strong>Прочитай текст вслух</strong> сначала с подсказкой, затем без неё.</li></ol></Card>
+        <button onClick={() => setDone(true)} className="focus-ring mt-7 min-h-12 w-full rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Завершить урок</button>
+        {done && <div className="mt-5 rounded-xl border-2 border-ink bg-mint/40 p-6 text-center"><Check className="mx-auto" size={40} /><h3 className="mt-2 text-3xl font-black">Први час је готов!</h3><p>Структура лекции пройдена полностью. Сачувај текст о себи — он понадобится дальше.</p></div>}
+      </section>
+    </div>
+  </main>;
+}
