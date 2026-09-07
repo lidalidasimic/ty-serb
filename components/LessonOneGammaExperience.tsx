@@ -6,6 +6,7 @@ import { Check, Pause, Play, Volume2 } from "lucide-react";
 import { cyrillicAlphabetImage, latinAlphabetImage } from "@/data/alphabet-images";
 
 const KEY = "ty-serb:lesson-1-gamma:v1";
+let activeLessonAudio: HTMLAudioElement | null = null;
 const sections = [
   "Сербский — это легко",
   "Вук Караджич",
@@ -78,11 +79,11 @@ const studentExamples = [
 ];
 
 const peopleQuestions = [
-  { question: "Что значит umetnica?", options: ["художница", "учительница", "студентка"], correct: "художница" },
+  { question: "Что значит umetnica?", options: ["учительница", "художница", "студентка"], correct: "художница" },
   { question: "Odakle je Ana?", options: ["Из Новог Сада", "Из Београда", "Из Москве"], correct: "Из Новог Сада" },
-  { question: "Šta radi Marko?", options: ["Ради од куће као програмер", "Студира медицину", "Ради у школи"], correct: "Ради од куће као програмер" },
-  { question: "Gde živi Irina?", options: ["У Нишу", "У Москви", "У Крагујевцу"], correct: "У Нишу" },
-  { question: "Koliko godina ima Nikola?", options: ["Седамнаест", "Двадесет осам", "Двадесет четири"], correct: "Седамнаест" },
+  { question: "Šta radi Marko?", options: ["Студира медицину", "Ради у школи", "Ради од куће као програмер"], correct: "Ради од куће као програмер" },
+  { question: "Gde živi Irina?", options: ["У Москви", "У Крагујевцу", "У Нишу"], correct: "У Нишу" },
+  { question: "Koliko godina ima Nikola?", options: ["Двадесет осам", "Седамнаест", "Двадесет четири"], correct: "Седамнаест" },
   { question: "Da li Milica voli svoj posao?", options: ["Да, воли га", "Не, не воли га", "У тексту не пише"], correct: "Да, воли га" },
 ];
 
@@ -99,7 +100,7 @@ function Narration({ src, label, transcript, bonus = false }: { src: string; lab
 
   return <div className={`mt-5 rounded-xl border-2 border-ink p-4 shadow-[3px_3px_0_#202124] ${bonus ? "bg-yellow-50" : "bg-blue-50"}`}>
     <p className="mb-3 flex items-center gap-2 font-black"><Volume2 size={20} aria-hidden /> Послушай объяснение · {label}</p>
-    <audio ref={audioRef} controls preload="none" className="w-full" aria-label={label}>
+    <audio ref={audioRef} controls preload="none" onPlay={() => { const audio = audioRef.current; if (!audio) return; if (activeLessonAudio && activeLessonAudio !== audio) activeLessonAudio.pause(); activeLessonAudio = audio; }} className="w-full" aria-label={label}>
       <source src={src} type="audio/mp4" />
       Ваш браузер не поддерживает аудио.
     </audio>
@@ -179,7 +180,15 @@ function FeedbackForm({ section }: { section: number | "homework" }) {
     <button disabled={status === "sending"} className="focus-ring mt-3 min-h-11 rounded-lg border-2 border-ink bg-serbian-blue px-5 font-black text-white disabled:opacity-60">{status === "sending" ? "Отправляем…" : "Отправить"}</button>
     {status === "sent" ? <p role="status" className="mt-3 font-black text-green-800">Спасибо! Сообщение отправлено ✓</p> : null}
     {status === "error" ? <p role="alert" className="mt-3 font-black text-red-800">Не получилось отправить. Попробуй ещё раз.</p> : null}
+    <CommunityList section={String(section)} />
   </form>;
+}
+
+function CommunityList({ section }: { section: string }) {
+  const [items, setItems] = useState<{ id: string; name: string; message: string }[]>([]);
+  useEffect(() => { fetch(`/api/lesson-feedback?section=${encodeURIComponent(section)}`).then(response => response.json()).then(data => setItems(Array.isArray(data.items) ? data.items : [])).catch(() => setItems([])); }, [section]);
+  if (items.length === 0) return null;
+  return <div className="mt-5 border-t-2 border-ink/20 pt-4"><p className="font-black">Сообщения учеников</p><div className="mt-3 space-y-2">{items.map(item => <div key={item.id} className="rounded-lg border border-ink/25 bg-white p-3"><p className="text-sm font-black">{item.name}</p><p className="whitespace-pre-wrap">{item.message}</p></div>)}</div></div>;
 }
 
 function Block({ number, title, children, active }: { number: number; title: string; children: React.ReactNode; active: boolean }) {
@@ -201,6 +210,7 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
   const [schoolAnswers, setSchoolAnswers] = useState<Record<string, string>>({});
   const [peopleAnswers, setPeopleAnswers] = useState<Record<number, string>>({});
   const [studentName, setStudentName] = useState("");
+  const [introStatus, setIntroStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [done, setDone] = useState(false);
   const [profilePage, setProfilePage] = useState<"people" | "school">("people");
@@ -236,8 +246,10 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
     }
 
     current?.pause();
+    if (activeLessonAudio && activeLessonAudio !== current) activeLessonAudio.pause();
     const audio = new Audio(src);
     inlineAudioRef.current = audio;
+    activeLessonAudio = audio;
     setActiveClip(src);
     audio.onplay = () => setClipPlaying(true);
     audio.onpause = () => setClipPlaying(false);
@@ -254,6 +266,16 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
     inlineAudioRef.current?.pause();
     setProfilePage(page);
     requestAnimationFrame(() => document.getElementById("gamma-step-6")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
+  const submitIntroduction = async () => {
+    if (studentName.trim().length < 2 || introStatus === "sending") return;
+    setIntroStatus("sending");
+    try {
+      const response = await fetch("/api/lesson-feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lessonSlug: "azbuka-i-proiznoshenie", section: "introductions", name: "", message: studentName.trim(), kind: "introduction" }) });
+      if (!response.ok) throw new Error("submit failed");
+      setIntroStatus("sent");
+    } catch { setIntroStatus("error"); }
   };
 
   const results = [
@@ -348,7 +370,7 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
         <Narration src="/audio/lesson-1/08-greetings.m4a" label="Приветствия и знакомство" transcript={'Сусрет: Добар дан! Добро јутро! Добро вече! Здраво! Ћао!\n\nПредстављање: Ја се зовем… Зовем се… Ја сам… Драго ми је!\n\nРастанак: Довиђења. Пријатно! Видимо се! Ћао!'} />
         {[["Сусрет","Добар дан! Добро јутро! Добро вече! Здраво! Ћао!"],["Представљање","Ја се зовем… Зовем се… Ја сам… Драго ми је!"],["Растанак","Довиђења. Пријатно! Видимо се! Ћао!"]].map(([title,text]) => <div className="mt-4" key={title}><Card><p className="text-xl font-black">{title}</p><p>{text}</p></Card></div>)}
         <Card><p className="font-black">Пример дијалога</p><p className="mt-2">— Како се зовеш?<br />— Ја се зовем Света. А ти?<br />— Зовем се Сева. Драго ми је!</p></Card>
-        <div className="relative mt-6 rounded-[2rem] border-2 border-ink bg-white p-5 shadow-[3px_3px_0_#202124] after:absolute after:-bottom-3 after:left-10 after:h-6 after:w-6 after:rotate-45 after:border-b-2 after:border-r-2 after:border-ink after:bg-white"><label className="block"><span className="text-xl font-black">Как тебя зовут?</span><span className="mt-1 block text-sm text-ink/65">Напиши по-сербски: <em>Ja se zovem…</em> или <em>Zovem se…</em></span><input value={studentName} onChange={event => { setStudentName(event.target.value); setChecked(old => ({ ...old, 4: false })); }} className="focus-ring mt-3 w-full rounded-xl border-2 border-ink bg-blue-50 px-4 py-3 font-bold" placeholder="Ja se zovem…" /></label></div>
+        <div className="relative mt-6 rounded-[2rem] border-2 border-ink bg-white p-5 shadow-[3px_3px_0_#202124] after:absolute after:-bottom-3 after:left-10 after:h-6 after:w-6 after:rotate-45 after:border-b-2 after:border-r-2 after:border-ink after:bg-white"><label className="block"><span className="text-xl font-black">Как тебя зовут?</span><span className="mt-1 block text-sm text-ink/65">Напиши по-сербски: <em>Ja se zovem…</em> или <em>Zovem se…</em></span><input value={studentName} onChange={event => { setStudentName(event.target.value); setIntroStatus("idle"); setChecked(old => ({ ...old, 4: false })); }} className="focus-ring mt-3 w-full rounded-xl border-2 border-ink bg-blue-50 px-4 py-3 font-bold" placeholder="Ja se zovem…" /></label><button type="button" onClick={submitIntroduction} disabled={studentName.trim().length < 2 || introStatus === "sending"} className="focus-ring mt-3 min-h-11 rounded-lg border-2 border-ink bg-serbian-blue px-4 font-black text-white disabled:opacity-50">{introStatus === "sending" ? "Отправляем…" : "Отправить ответ"}</button>{introStatus === "sent" ? <p className="mt-2 text-sm font-black text-green-800">Ответ отправлен на проверку ✓</p> : null}{introStatus === "error" ? <p className="mt-2 text-sm font-black text-red-800">Не получилось отправить.</p> : null}<CommunityList section="introductions" /></div>
         <p className="mt-4 rounded-xl bg-blue-50 p-4"><strong>Как строится знакомство:</strong> приветствие → имя → вопрос <em>А ти?</em> → фраза <em>Драго ми је</em>. «Здраво» нейтрально, «ћао» более неформально.</p>
         <Next index={4} />
       </Block>
@@ -371,8 +393,6 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
         <h3 className="mt-8 text-2xl font-black">Проверь, что ты понял</h3>
         <div className="mt-4 space-y-4">{peopleQuestions.map((item, questionIndex) => <div key={item.question} className="rounded-xl border-2 border-ink bg-white p-4"><p className="font-black">{questionIndex + 1}. {item.question}</p><div className="mt-3 grid gap-2 sm:grid-cols-3">{item.options.map(option => { const selected = peopleAnswers[questionIndex] === option; const answered = Boolean(peopleAnswers[questionIndex]); const correct = option === item.correct; return <button type="button" key={option} onClick={() => setPeopleAnswers(old => ({ ...old, [questionIndex]: option }))} className={`focus-ring min-h-12 rounded-lg border-2 border-ink px-3 py-2 ${selected ? correct ? "bg-green-200" : "bg-red-100" : answered && correct ? "bg-green-100" : "bg-white"}`}>{option}</button>; })}</div>{peopleAnswers[questionIndex] ? <p role="status" className={`mt-3 text-sm font-black ${peopleAnswers[questionIndex] === item.correct ? "text-green-800" : "text-red-800"}`}>{peopleAnswers[questionIndex] === item.correct ? "Правильно ✓" : `Правильный ответ: ${item.correct}`}</p> : null}</div>)}</div>
         <div className="mt-5 rounded-xl border-2 border-ink bg-blue-50 p-5"><p className="font-black">Как читать эти тексты</p><p className="mt-2"><em>Ја сам / Зовем се</em> — имя; <em>Имам … година</em> — возраст; <em>Ја сам из… / Живим у…</em> — происхождение и место жительства; <em>Студирам / Радим / Идем у школу</em> — занятие.</p></div>
-        <h3 className="mt-7 text-xl font-black">Скажи о себе вслух</h3><p>Ja sam ____. Ja sam iz ____. Imam ____ godina. Ja sam ____.</p>
-        <p className="mt-3 text-sm text-ink/65">Микрофон не нужен: произнеси четыре фразы, затем повтори без шаблона.</p>
         <button onClick={() => showProfilePage("school")} className="focus-ring mt-8 min-h-12 w-full rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Дальше: школьная лексика →</button>
         </> : null}
 
@@ -421,7 +441,7 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
         <button onClick={() => setCurrentStep(7)} className="focus-ring mt-7 min-h-12 w-full rounded-xl border-2 border-ink bg-white px-5 py-3 font-black shadow-[3px_3px_0_#202124]">← Вернуться к предыдущему разделу</button>
         <FeedbackForm section="homework" />
         <button onClick={() => setDone(true)} className="focus-ring mt-7 min-h-12 w-full rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Завершить урок</button>
-        {done && <><div className="mt-5 rounded-xl border-2 border-ink bg-mint/40 p-6 text-center"><Check className="mx-auto" size={40} /><h3 className="mt-2 text-3xl font-black">Први час је готов!</h3><p>Структура лекции пройдена полностью. Сачувај текст о себи — он понадобится дальше.</p></div>{isAuthenticated ? <Link href="/lessons/kak-predstavitsya" className="focus-ring mt-5 flex min-h-12 w-full items-center justify-center rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 text-center font-black text-white shadow-[3px_3px_0_#202124]">Перейти к уроку 2 →</Link> : <div className="mt-5 rounded-xl border-2 border-ink bg-white p-5 shadow-[3px_3px_0_#202124]"><p className="font-black">Продолжить обучение</p><p className="mt-1">Войди в существующий аккаунт или зарегистрируйся, чтобы перейти к уроку 2.</p><div className="mt-4 grid gap-3 sm:grid-cols-2"><Link href="/login?next=/lessons/kak-predstavitsya" className="focus-ring flex min-h-12 items-center justify-center rounded-xl border-2 border-ink bg-serbian-blue px-4 text-center font-black text-white">Войти</Link><Link href="/register?next=/lessons/kak-predstavitsya" className="focus-ring flex min-h-12 items-center justify-center rounded-xl border-2 border-ink bg-serbian-red px-4 text-center font-black text-white">Создать аккаунт</Link></div></div>}</>}
+        {done && <><div className="pointer-events-none fixed inset-0 z-50 overflow-hidden" aria-hidden>{Array.from({ length: 36 }, (_, index) => <span key={index} className="absolute top-[-10%] h-3 w-2 animate-[confetti_2.8s_ease-out_forwards]" style={{ left: `${(index * 29) % 100}%`, backgroundColor: ["#c8343c", "#174f86", "#f4c542", "#49b675", "#8b4bb7"][index % 5], animationDelay: `${(index % 12) * 0.08}s`, transform: `rotate(${index * 31}deg)` }} />)}</div><style>{`@keyframes confetti{0%{transform:translateY(-10vh) rotate(0deg);opacity:1}100%{transform:translateY(115vh) rotate(760deg);opacity:.15}}`}</style><div className="mt-5 rounded-xl border-2 border-ink bg-mint/40 p-6 text-center"><div className="text-5xl" aria-hidden>🎉</div><Check className="mx-auto mt-2" size={40} /><h3 className="mt-2 text-4xl font-black text-serbian-red">БРАВО!</h3><p className="mt-2 text-2xl font-black">Први час је готов!</p><p>Структура лекции пройдена полностью. Сачувај текст о себи — он понадобится дальше.</p></div>{isAuthenticated ? <Link href="/lessons/kak-predstavitsya" className="focus-ring mt-5 flex min-h-12 w-full items-center justify-center rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 text-center font-black text-white shadow-[3px_3px_0_#202124]">Перейти к уроку 2 →</Link> : <div className="mt-5 rounded-xl border-2 border-ink bg-white p-5 shadow-[3px_3px_0_#202124]"><p className="font-black">Продолжить обучение</p><p className="mt-1">Войди в существующий аккаунт или зарегистрируйся, чтобы перейти к уроку 2.</p><div className="mt-4 grid gap-3 sm:grid-cols-2"><Link href="/login?next=/lessons/kak-predstavitsya" className="focus-ring flex min-h-12 items-center justify-center rounded-xl border-2 border-ink bg-serbian-blue px-4 text-center font-black text-white">Войти</Link><Link href="/register?next=/lessons/kak-predstavitsya" className="focus-ring flex min-h-12 items-center justify-center rounded-xl border-2 border-ink bg-serbian-red px-4 text-center font-black text-white">Создать аккаунт</Link></div></div>}</>}
       </section> : null}
     </div>
   </div>;

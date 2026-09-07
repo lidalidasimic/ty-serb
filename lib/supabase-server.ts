@@ -416,13 +416,38 @@ export async function saveLessonFeedback(params: {
   section: string;
   name: string;
   message: string;
+  kind?: "feedback" | "introduction";
 }) {
   await supabaseAdminFetch("/rest/v1/activity_events", {
     method: "POST",
     body: JSON.stringify({
       user_id: params.userId,
       lesson_slug: params.lessonSlug,
-      action_type: `lesson_feedback:${JSON.stringify({ section: params.section, name: params.name || "Анонимно", message: params.message })}`,
+      action_type: `lesson_feedback_pending:${JSON.stringify({ kind: params.kind || "feedback", section: params.section, name: params.name || "Анонимно", message: params.message })}`,
     }),
   });
+}
+
+export async function listApprovedLessonFeedback(section: string) {
+  const events = (await supabaseAdminFetch("/rest/v1/activity_events?select=id,action_type,created_at&order=created_at.asc&limit=500")) as Pick<ActivityEvent, "id" | "action_type" | "created_at">[];
+  return events.flatMap(event => {
+    const prefix = "lesson_feedback_approved:";
+    if (!event.action_type.startsWith(prefix)) return [];
+    try {
+      const value = JSON.parse(event.action_type.slice(prefix.length)) as { kind?: string; section?: string; name?: string; message?: string };
+      return value.section === section ? [{ id: event.id, kind: value.kind || "feedback", name: value.name || "Анонимно", message: value.message || "", createdAt: event.created_at }] : [];
+    } catch { return []; }
+  });
+}
+
+export async function moderateLessonFeedback(id: string, decision: "approved" | "hidden") {
+  const events = (await supabaseAdminFetch(`/rest/v1/activity_events?select=id,action_type&id=eq.${encodeURIComponent(id)}&limit=1`)) as Pick<ActivityEvent, "id" | "action_type">[];
+  const event = events[0];
+  if (!event) throw new Error("Feedback not found");
+  const prefixes = ["lesson_feedback_pending:", "lesson_feedback:", "lesson_feedback_approved:"];
+  const prefix = prefixes.find(item => event.action_type.startsWith(item));
+  if (!prefix) throw new Error("Invalid feedback event");
+  const payload = event.action_type.slice(prefix.length);
+  JSON.parse(payload);
+  await supabaseAdminFetch(`/rest/v1/activity_events?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ action_type: `lesson_feedback_${decision}:${payload}` }) });
 }

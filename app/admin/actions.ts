@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin, setAccessStatus } from "@/lib/supabase-server";
+import { moderateLessonFeedback, requireAdmin, setAccessStatus } from "@/lib/supabase-server";
 import type { AccessStatus } from "@/lib/access-control";
 
 export async function updateAccessStatusAction(formData: FormData) {
@@ -19,5 +19,14 @@ export async function updateAccessStatusAction(formData: FormData) {
     adminUserId: admin.id,
   });
 
+  revalidatePath("/admin");
+}
+
+export async function moderateFeedbackAction(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const decision = String(formData.get("decision") ?? "");
+  if (!id || (decision !== "approved" && decision !== "hidden")) throw new Error("Invalid moderation request");
+  await moderateLessonFeedback(id, decision);
   revalidatePath("/admin");
 }

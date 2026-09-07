@@ -1,5 +1,5 @@
 import { Check, Search, Shield, X } from "lucide-react";
-import { updateAccessStatusAction } from "@/app/admin/actions";
+import { moderateFeedbackAction, updateAccessStatusAction } from "@/app/admin/actions";
 import { listProfiles, listRecentActivity, requireAdmin } from "@/lib/supabase-server";
 
 type AdminPageProps = {
@@ -123,7 +123,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         <div className="mt-8 border-2 border-ink bg-white p-6 shadow-comic">
           <h2 className="mb-4 text-2xl font-black">Обратная связь по урокам</h2>
           <div className="mb-8 space-y-3">
-            {feedback.length > 0 ? feedback.map(item => <div key={item.id} className="rounded-lg border-2 border-ink bg-blue-50 p-4"><div className="flex flex-wrap justify-between gap-2"><p className="font-black">{item.name} · раздел {item.section}</p><p className="text-sm text-ink/60">{new Date(item.createdAt).toLocaleString("ru-RU")}</p></div><p className="mt-2 whitespace-pre-wrap">{item.message}</p></div>) : <p className="text-ink/65">Пока нет сообщений.</p>}
+            {feedback.length > 0 ? feedback.map(item => <div key={item.id} className="rounded-lg border-2 border-ink bg-blue-50 p-4"><div className="flex flex-wrap justify-between gap-2"><p className="font-black">{item.name} · раздел {item.section} · {item.status}</p><p className="text-sm text-ink/60">{new Date(item.createdAt).toLocaleString("ru-RU")}</p></div><p className="mt-2 whitespace-pre-wrap">{item.message}</p><div className="mt-3 flex gap-2"><form action={moderateFeedbackAction}><input type="hidden" name="id" value={item.id} /><input type="hidden" name="decision" value="approved" /><button className="rounded-lg border-2 border-ink bg-mint/40 px-3 py-2 font-black">Опубликовать</button></form><form action={moderateFeedbackAction}><input type="hidden" name="id" value={item.id} /><input type="hidden" name="decision" value="hidden" /><button className="rounded-lg border-2 border-ink bg-white px-3 py-2 font-black">Скрыть</button></form></div></div>) : <p className="text-ink/65">Пока нет сообщений.</p>}
           </div>
           <h2 className="mb-4 text-2xl font-black">Часто открывали</h2>
           <div className="mb-8 grid gap-3 sm:grid-cols-3">
@@ -160,11 +160,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 }
 
 function parseFeedback(event: { id: string; action_type: string; created_at: string }) {
-  const prefix = "lesson_feedback:";
-  if (!event.action_type.startsWith(prefix)) return null;
+  const prefixes = ["lesson_feedback_pending:", "lesson_feedback_approved:", "lesson_feedback_hidden:", "lesson_feedback:"];
+  const prefix = prefixes.find(item => event.action_type.startsWith(item));
+  if (!prefix) return null;
   try {
     const value = JSON.parse(event.action_type.slice(prefix.length)) as { section?: string; name?: string; message?: string };
-    return { id: event.id, section: value.section || "—", name: value.name || "Анонимно", message: value.message || "", createdAt: event.created_at };
+    const status = prefix === "lesson_feedback_approved:" ? "опубликовано" : prefix === "lesson_feedback_hidden:" ? "скрыто" : "ожидает проверки";
+    return { id: event.id, section: value.section || "—", name: value.name || "Анонимно", message: value.message || "", createdAt: event.created_at, status };
   } catch {
     return null;
   }
