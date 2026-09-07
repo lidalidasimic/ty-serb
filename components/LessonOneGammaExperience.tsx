@@ -273,7 +273,7 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
     setIntroStatus("sending");
     try {
       const response = await fetch("/api/lesson-feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lessonSlug: "azbuka-i-proiznoshenie", section: "introductions", name: "", message: studentName.trim(), kind: "introduction" }) });
-      if (!response.ok) throw new Error("submit failed");
+      if (!response.ok) { const data = await response.json().catch(() => ({})); throw new Error(data.error || "submit failed"); }
       setIntroStatus("sent");
     } catch { setIntroStatus("error"); }
   };

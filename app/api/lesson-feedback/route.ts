@@ -31,7 +31,8 @@ export async function POST(request: Request) {
     await saveLessonFeedback({ userId: user?.id ?? null, lessonSlug, section, name, message, kind });
     recentSubmissions.set(address, now);
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Не получилось сохранить сообщение" }, { status: 500 });
+  } catch (error) {
+    console.error("lesson-feedback save failed", error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Не получилось сохранить сообщение" }, { status: 500 });
   }
 }
