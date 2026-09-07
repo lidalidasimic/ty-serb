@@ -200,6 +200,7 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
   const [bitiAnswers, setBitiAnswers] = useState<Record<string, string>>({});
   const [schoolAnswers, setSchoolAnswers] = useState<Record<string, string>>({});
   const [peopleAnswers, setPeopleAnswers] = useState<Record<number, string>>({});
+  const [studentName, setStudentName] = useState("");
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [done, setDone] = useState(false);
   const [profilePage, setProfilePage] = useState<"people" | "school">("people");
@@ -260,7 +261,7 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
     [["Й","Ј"],["ЛЬ","Љ"],["НЬ","Њ"],["ДЖ","Џ"]].every(([sound, answer]) => letterAnswers[sound] === answer),
     true,
     true,
-    true,
+    studentName.trim().length >= 2,
     [["Ја","САМ"],["Ти","СИ"],["Она","ЈЕ"],["Ми","СМО"]].every(([pronoun, answer]) => bitiAnswers[pronoun] === answer),
     schoolWords.every(([, word]) => schoolAnswers[word] === word),
     true,
@@ -272,8 +273,8 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
   };
 
   const Card = ({ children }: { children: React.ReactNode }) => <div className="rounded-xl border-2 border-ink bg-white p-5 shadow-[3px_3px_0_#202124]">{children}</div>;
-  const Next = ({ index }: { index: number }) => <div className="mt-7"><div className={`grid gap-3 ${index > 0 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}><button onClick={() => finish(index)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Проверить</button>{index > 0 ? <button onClick={() => setCurrentStep(index - 1)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-white px-5 py-3 font-black shadow-[3px_3px_0_#202124]">← Вернуться</button> : null}<button onClick={() => setCurrentStep(index + 1)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Дальше →</button></div>{checked[index] && <p role="status" aria-live="polite" className={`mt-3 rounded-xl border-2 border-ink p-3 text-center font-black ${results[index] ? "bg-mint/50" : "bg-red-100 text-red-900"}`}>{results[index] ? "Всё правильно ✓ Раздел пройден." : "Есть ошибка. Красным отмечено, что нужно исправить — затем проверь ещё раз."}</p>}</div>;
-  const SchoolNext = () => <div className="mt-7"><div className="grid gap-3 sm:grid-cols-2"><button onClick={() => finish(6)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Проверить</button><button onClick={() => scrollWithinProfile("profile-comic")} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Дальше: комикс →</button></div>{checked[6] && <p role="status" aria-live="polite" className={`mt-3 rounded-xl border-2 border-ink p-3 text-center font-black ${results[6] ? "bg-mint/50" : "bg-red-100 text-red-900"}`}>{results[6] ? "Всё правильно ✓ Раздел пройден." : "Есть ошибка. Исправь ответы и проверь ещё раз."}</p>}</div>;
+  const Next = ({ index }: { index: number }) => { const isListeningOnly = index === 2 || index === 3; return <div className="mt-7"><div className={`grid gap-3 ${index > 0 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>{index > 0 ? <button onClick={() => setCurrentStep(index - 1)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-white px-5 py-3 font-black shadow-[3px_3px_0_#202124]">← Вернуться</button> : null}<button onClick={() => finish(index)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">{isListeningOnly ? "Я прослушал" : "Проверить"}</button><button onClick={() => setCurrentStep(index + 1)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Дальше →</button></div>{checked[index] && <p role="status" aria-live="polite" className={`mt-3 rounded-xl border-2 border-ink p-3 text-center font-black ${results[index] ? "bg-mint/50" : "bg-red-100 text-red-900"}`}>{results[index] ? isListeningOnly ? "Готово ✓ Можно идти дальше." : "Всё правильно ✓ Раздел пройден." : "Сначала выполни задание, затем проверь ещё раз."}</p>}</div>; };
+  const SchoolNext = () => <div className="mt-7"><div className="grid gap-3 sm:grid-cols-3"><button onClick={() => showProfilePage("people")} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-white px-5 py-3 font-black shadow-[3px_3px_0_#202124]">← Вернуться</button><button onClick={() => finish(6)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Проверить</button><button onClick={() => scrollWithinProfile("profile-comic")} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Дальше: комикс →</button></div>{checked[6] && <p role="status" aria-live="polite" className={`mt-3 rounded-xl border-2 border-ink p-3 text-center font-black ${results[6] ? "bg-mint/50" : "bg-red-100 text-red-900"}`}>{results[6] ? "Всё правильно ✓ Раздел пройден." : "Есть ошибка. Исправь ответы и проверь ещё раз."}</p>}</div>;
 
   const answerClass = (selected: boolean, correct: boolean, section: number) => selected
     ? checked[section] ? (correct ? "border-green-700 bg-green-200 text-green-950" : "border-red-700 bg-red-100 text-red-900") : "bg-blue-50"
@@ -347,6 +348,7 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
         <Narration src="/audio/lesson-1/08-greetings.m4a" label="Приветствия и знакомство" transcript={'Сусрет: Добар дан! Добро јутро! Добро вече! Здраво! Ћао!\n\nПредстављање: Ја се зовем… Зовем се… Ја сам… Драго ми је!\n\nРастанак: Довиђења. Пријатно! Видимо се! Ћао!'} />
         {[["Сусрет","Добар дан! Добро јутро! Добро вече! Здраво! Ћао!"],["Представљање","Ја се зовем… Зовем се… Ја сам… Драго ми је!"],["Растанак","Довиђења. Пријатно! Видимо се! Ћао!"]].map(([title,text]) => <div className="mt-4" key={title}><Card><p className="text-xl font-black">{title}</p><p>{text}</p></Card></div>)}
         <Card><p className="font-black">Пример дијалога</p><p className="mt-2">— Како се зовеш?<br />— Ја се зовем Света. А ти?<br />— Зовем се Сева. Драго ми је!</p></Card>
+        <div className="relative mt-6 rounded-[2rem] border-2 border-ink bg-white p-5 shadow-[3px_3px_0_#202124] after:absolute after:-bottom-3 after:left-10 after:h-6 after:w-6 after:rotate-45 after:border-b-2 after:border-r-2 after:border-ink after:bg-white"><label className="block"><span className="text-xl font-black">Как тебя зовут?</span><span className="mt-1 block text-sm text-ink/65">Напиши по-сербски: <em>Ja se zovem…</em> или <em>Zovem se…</em></span><input value={studentName} onChange={event => { setStudentName(event.target.value); setChecked(old => ({ ...old, 4: false })); }} className="focus-ring mt-3 w-full rounded-xl border-2 border-ink bg-blue-50 px-4 py-3 font-bold" placeholder="Ja se zovem…" /></label></div>
         <p className="mt-4 rounded-xl bg-blue-50 p-4"><strong>Как строится знакомство:</strong> приветствие → имя → вопрос <em>А ти?</em> → фраза <em>Драго ми је</em>. «Здраво» нейтрально, «ћао» более неформально.</p>
         <Next index={4} />
       </Block>
@@ -375,7 +377,6 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
         </> : null}
 
         {profilePage === "school" ? <>
-        <button onClick={() => showProfilePage("people")} className="focus-ring mb-7 min-h-12 w-full rounded-xl border-2 border-ink bg-white px-5 py-3 font-black shadow-[3px_3px_0_#202124]">← Вернуться к рассказам о людях</button>
         <h2 id="profile-school" className="mt-2 scroll-mt-24 text-3xl font-black">Школьная лексика</h2>
         <p className="mt-3">Рассмотри иллюстрации и прочитай все слова вслух.</p>
         <Narration src="/audio/lesson-1/11-school-vocabulary.m4a" label="Школьная лексика" transcript="Школьная лексика: свеска — тетрадь, столица — стул, књига — книга, рачунар — компьютер, оловка — карандаш, телефон — телефон, кључ — ключ, торба — сумка." />
