@@ -77,6 +77,15 @@ const studentExamples = [
   "Ja sam Ana. Ja sam iz Rusije. Moja sestra se zove Saša. Ona živi u Crnoj Gori. Imam dvadeset šest godina, a moja sestra ima dvadeset i tri godine.",
 ];
 
+const peopleQuestions = [
+  { question: "Что значит umetnica?", options: ["художница", "учительница", "студентка"], correct: "художница" },
+  { question: "Odakle je Ana?", options: ["Из Новог Сада", "Из Београда", "Из Москве"], correct: "Из Новог Сада" },
+  { question: "Šta radi Marko?", options: ["Ради од куће као програмер", "Студира медицину", "Ради у школи"], correct: "Ради од куће као програмер" },
+  { question: "Gde živi Irina?", options: ["У Нишу", "У Москви", "У Крагујевцу"], correct: "У Нишу" },
+  { question: "Koliko godina ima Nikola?", options: ["Седамнаест", "Двадесет осам", "Двадесет четири"], correct: "Седамнаест" },
+  { question: "Da li Milica voli svoj posao?", options: ["Да, воли га", "Не, не воли га", "У тексту не пише"], correct: "Да, воли га" },
+];
+
 function Narration({ src, label, transcript, bonus = false }: { src: string; label: string; transcript: string; bonus?: boolean }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [speed, setSpeed] = useState<1 | 1.5>(1);
@@ -143,12 +152,43 @@ function LearningExercise({ title, appId }: { title: string; appId: string }) {
   );
 }
 
+function FeedbackForm({ section }: { section: number | "homework" }) {
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+
+  const sendFeedback = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!message.trim() || status === "sending") return;
+    setStatus("sending");
+    try {
+      const response = await fetch("/api/lesson-feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lessonSlug: "azbuka-i-proiznoshenie", section: String(section), name: name.trim(), message: message.trim() }) });
+      if (!response.ok) throw new Error("feedback failed");
+      setMessage("");
+      setStatus("sent");
+    } catch {
+      setStatus("error");
+    }
+  };
+
+  return <form onSubmit={sendFeedback} className="mt-9 rounded-xl border-2 border-ink bg-blue-50 p-5 shadow-[3px_3px_0_#202124]">
+    <h3 className="text-xl font-black">Обратная связь</h3>
+    <p className="mt-1 text-sm text-ink/70">Что понравилось, что было непонятно или что стоит улучшить?</p>
+    <label className="mt-4 block"><span className="text-sm font-black">Имя — необязательно</span><input value={name} onChange={event => setName(event.target.value)} maxLength={80} className="focus-ring mt-1 w-full rounded-lg border-2 border-ink bg-white px-3 py-2" placeholder="Можно оставить пустым" /></label>
+    <label className="mt-3 block"><span className="text-sm font-black">Комментарий</span><textarea required value={message} onChange={event => { setMessage(event.target.value); if (status !== "idle") setStatus("idle"); }} maxLength={1500} rows={4} className="focus-ring mt-1 w-full resize-y rounded-lg border-2 border-ink bg-white px-3 py-2" placeholder="Напиши свои мысли, пожелания или вопрос" /></label>
+    <button disabled={status === "sending"} className="focus-ring mt-3 min-h-11 rounded-lg border-2 border-ink bg-serbian-blue px-5 font-black text-white disabled:opacity-60">{status === "sending" ? "Отправляем…" : "Отправить"}</button>
+    {status === "sent" ? <p role="status" className="mt-3 font-black text-green-800">Спасибо! Сообщение отправлено ✓</p> : null}
+    {status === "error" ? <p role="alert" className="mt-3 font-black text-red-800">Не получилось отправить. Попробуй ещё раз.</p> : null}
+  </form>;
+}
+
 function Block({ number, title, children, active }: { number: number; title: string; children: React.ReactNode; active: boolean }) {
   if (!active) return null;
   return <section id={`gamma-step-${number}`} className="scroll-mt-24 border-t-2 border-ink py-10">
     {number > 0 ? <p className="mb-5 font-black uppercase tracking-[.15em] text-serbian-blue">Учимо српски са Лидијом Симић!</p> : null}
     <p className="font-black uppercase tracking-[.14em] text-serbian-red">{number + 1}. {title}</p>
     {children}
+    <FeedbackForm section={number + 1} />
   </section>;
 }
 
@@ -159,6 +199,7 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
   const [letterAnswers, setLetterAnswers] = useState<Record<string, string>>({});
   const [bitiAnswers, setBitiAnswers] = useState<Record<string, string>>({});
   const [schoolAnswers, setSchoolAnswers] = useState<Record<string, string>>({});
+  const [peopleAnswers, setPeopleAnswers] = useState<Record<number, string>>({});
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [done, setDone] = useState(false);
   const [profilePage, setProfilePage] = useState<"people" | "school">("people");
@@ -325,6 +366,8 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
         <h2 className="mt-2 text-3xl font-black">От имени к профессии</h2>
         <p className="mt-3">Прочитай все шесть текстов. Заметь повторяющиеся конструкции: имя, возраст, город, учёба или работа.</p>
         <div className="mt-5 space-y-4">{people.map((person, index) => <Card key={person.name}><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0 flex-1"><p className="text-xl font-black">{index + 1}. {person.name}</p><p className="mt-2">{person.text}</p></div><PronunciationButton word={`текст о ${person.name}`} isPlaying={activeClip === person.audio && clipPlaying} onToggle={() => toggleClip(person.audio)} /></div></Card>)}</div>
+        <h3 className="mt-8 text-2xl font-black">Проверь, что ты понял</h3>
+        <div className="mt-4 space-y-4">{peopleQuestions.map((item, questionIndex) => <div key={item.question} className="rounded-xl border-2 border-ink bg-white p-4"><p className="font-black">{questionIndex + 1}. {item.question}</p><div className="mt-3 grid gap-2 sm:grid-cols-3">{item.options.map(option => { const selected = peopleAnswers[questionIndex] === option; const answered = Boolean(peopleAnswers[questionIndex]); const correct = option === item.correct; return <button type="button" key={option} onClick={() => setPeopleAnswers(old => ({ ...old, [questionIndex]: option }))} className={`focus-ring min-h-12 rounded-lg border-2 border-ink px-3 py-2 ${selected ? correct ? "bg-green-200" : "bg-red-100" : answered && correct ? "bg-green-100" : "bg-white"}`}>{option}</button>; })}</div>{peopleAnswers[questionIndex] ? <p role="status" className={`mt-3 text-sm font-black ${peopleAnswers[questionIndex] === item.correct ? "text-green-800" : "text-red-800"}`}>{peopleAnswers[questionIndex] === item.correct ? "Правильно ✓" : `Правильный ответ: ${item.correct}`}</p> : null}</div>)}</div>
         <div className="mt-5 rounded-xl border-2 border-ink bg-blue-50 p-5"><p className="font-black">Как читать эти тексты</p><p className="mt-2"><em>Ја сам / Зовем се</em> — имя; <em>Имам … година</em> — возраст; <em>Ја сам из… / Живим у…</em> — происхождение и место жительства; <em>Студирам / Радим / Идем у школу</em> — занятие.</p></div>
         <h3 className="mt-7 text-xl font-black">Скажи о себе вслух</h3><p>Ja sam ____. Ja sam iz ____. Imam ____ godina. Ja sam ____.</p>
         <p className="mt-3 text-sm text-ink/65">Микрофон не нужен: произнеси четыре фразы, затем повтори без шаблона.</p>
@@ -375,6 +418,7 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
         </div>
         <LearningExercise title="Повторение: новые слова урока" appId="po4gcggtv26" />
         <button onClick={() => setCurrentStep(7)} className="focus-ring mt-7 min-h-12 w-full rounded-xl border-2 border-ink bg-white px-5 py-3 font-black shadow-[3px_3px_0_#202124]">← Вернуться к предыдущему разделу</button>
+        <FeedbackForm section="homework" />
         <button onClick={() => setDone(true)} className="focus-ring mt-7 min-h-12 w-full rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Завершить урок</button>
         {done && <><div className="mt-5 rounded-xl border-2 border-ink bg-mint/40 p-6 text-center"><Check className="mx-auto" size={40} /><h3 className="mt-2 text-3xl font-black">Први час је готов!</h3><p>Структура лекции пройдена полностью. Сачувај текст о себи — он понадобится дальше.</p></div>{isAuthenticated ? <Link href="/lessons/kak-predstavitsya" className="focus-ring mt-5 flex min-h-12 w-full items-center justify-center rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 text-center font-black text-white shadow-[3px_3px_0_#202124]">Перейти к уроку 2 →</Link> : <div className="mt-5 rounded-xl border-2 border-ink bg-white p-5 shadow-[3px_3px_0_#202124]"><p className="font-black">Продолжить обучение</p><p className="mt-1">Войди в существующий аккаунт или зарегистрируйся, чтобы перейти к уроку 2.</p><div className="mt-4 grid gap-3 sm:grid-cols-2"><Link href="/login?next=/lessons/kak-predstavitsya" className="focus-ring flex min-h-12 items-center justify-center rounded-xl border-2 border-ink bg-serbian-blue px-4 text-center font-black text-white">Войти</Link><Link href="/register?next=/lessons/kak-predstavitsya" className="focus-ring flex min-h-12 items-center justify-center rounded-xl border-2 border-ink bg-serbian-red px-4 text-center font-black text-white">Создать аккаунт</Link></div></div>}</>}
       </section> : null}

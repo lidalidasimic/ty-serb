@@ -409,3 +409,20 @@ export async function logActivity(params: {
     // Logging must never break normal access decisions.
   }
 }
+
+export async function saveLessonFeedback(params: {
+  userId: string | null;
+  lessonSlug: string;
+  section: string;
+  name: string;
+  message: string;
+}) {
+  await supabaseAdminFetch("/rest/v1/activity_events", {
+    method: "POST",
+    body: JSON.stringify({
+      user_id: params.userId,
+      lesson_slug: params.lessonSlug,
+      action_type: `lesson_feedback:${JSON.stringify({ section: params.section, name: params.name || "Анонимно", message: params.message })}`,
+    }),
+  });
+}

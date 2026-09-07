@@ -17,6 +17,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const users = await listProfiles(status, q);
   const activity = await listRecentActivity();
   const materialStats = getMaterialStats(activity);
+  const feedback = activity.map(parseFeedback).filter((item) => item !== null);
 
   const counts = users.reduce(
     (acc, user) => {
@@ -120,6 +121,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         </div>
 
         <div className="mt-8 border-2 border-ink bg-white p-6 shadow-comic">
+          <h2 className="mb-4 text-2xl font-black">Обратная связь по урокам</h2>
+          <div className="mb-8 space-y-3">
+            {feedback.length > 0 ? feedback.map(item => <div key={item.id} className="rounded-lg border-2 border-ink bg-blue-50 p-4"><div className="flex flex-wrap justify-between gap-2"><p className="font-black">{item.name} · раздел {item.section}</p><p className="text-sm text-ink/60">{new Date(item.createdAt).toLocaleString("ru-RU")}</p></div><p className="mt-2 whitespace-pre-wrap">{item.message}</p></div>) : <p className="text-ink/65">Пока нет сообщений.</p>}
+          </div>
           <h2 className="mb-4 text-2xl font-black">Часто открывали</h2>
           <div className="mb-8 grid gap-3 sm:grid-cols-3">
             {materialStats.length > 0 ? (
@@ -152,6 +157,17 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       </div>
     </section>
   );
+}
+
+function parseFeedback(event: { id: string; action_type: string; created_at: string }) {
+  const prefix = "lesson_feedback:";
+  if (!event.action_type.startsWith(prefix)) return null;
+  try {
+    const value = JSON.parse(event.action_type.slice(prefix.length)) as { section?: string; name?: string; message?: string };
+    return { id: event.id, section: value.section || "—", name: value.name || "Анонимно", message: value.message || "", createdAt: event.created_at };
+  } catch {
+    return null;
+  }
 }
 
 function LastLessonOpens({
