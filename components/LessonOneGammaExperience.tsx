@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Volume2 } from "lucide-react";
+import { Check, Pause, Play, Volume2 } from "lucide-react";
 import { cyrillicAlphabetImage, latinAlphabetImage } from "@/data/alphabet-images";
 
 const KEY = "ty-serb:lesson-1-gamma:v1";
@@ -92,21 +92,21 @@ function Narration({ src, label, transcript, bonus = false }: { src: string; lab
   </div>;
 }
 
-function PronunciationButton({ src, word }: { src: string; word: string }) {
-  const play = () => {
-    const audio = new Audio(src);
-    void audio.play();
-  };
-
+function PronunciationButton({ word, isPlaying, onToggle }: { word: string; isPlaying: boolean; onToggle: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={play}
-      aria-label={`Прослушать произношение слова ${word}`}
-      className="focus-ring flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-serbian-blue text-white"
-    >
-      <Volume2 aria-hidden />
-    </button>
+    <div className="flex shrink-0 items-center gap-2">
+      <span className="flex min-h-12 min-w-12 items-center justify-center rounded-full border-2 border-ink bg-serbian-blue text-white" aria-hidden>
+        <Volume2 />
+      </span>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label={`${isPlaying ? "Приостановить" : "Прослушать"} ${word}`}
+        className="focus-ring flex min-h-12 items-center gap-2 rounded-full border-2 border-ink bg-white px-3 font-black"
+      >
+        {isPlaying ? <><Pause size={18} aria-hidden /> Pause</> : <><Play size={18} aria-hidden /> Play</>}
+      </button>
+    </div>
   );
 }
 
@@ -150,6 +150,9 @@ export default function LessonOneGammaExperience() {
   const [schoolAnswers, setSchoolAnswers] = useState<Record<string, string>>({});
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [done, setDone] = useState(false);
+  const inlineAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [activeClip, setActiveClip] = useState<string | null>(null);
+  const [clipPlaying, setClipPlaying] = useState(false);
 
   useEffect(() => {
     try {
@@ -167,6 +170,31 @@ export default function LessonOneGammaExperience() {
     if (currentStep === 0) return;
     requestAnimationFrame(() => document.getElementById(`gamma-step-${currentStep}`)?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }, [currentStep]);
+
+  useEffect(() => () => inlineAudioRef.current?.pause(), []);
+
+  const toggleClip = (src: string) => {
+    const current = inlineAudioRef.current;
+    if (activeClip === src && current) {
+      if (current.paused) void current.play();
+      else current.pause();
+      return;
+    }
+
+    current?.pause();
+    const audio = new Audio(src);
+    inlineAudioRef.current = audio;
+    setActiveClip(src);
+    audio.onplay = () => setClipPlaying(true);
+    audio.onpause = () => setClipPlaying(false);
+    audio.onended = () => setClipPlaying(false);
+    void audio.play();
+  };
+
+  const scrollWithinProfile = (id: string) => {
+    inlineAudioRef.current?.pause();
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const results = [
     ["škola", "gimnazija", "internet"].every(word => cognateAnswers[word] === "похоже на русское"),
@@ -186,6 +214,7 @@ export default function LessonOneGammaExperience() {
 
   const Card = ({ children }: { children: React.ReactNode }) => <div className="rounded-xl border-2 border-ink bg-white p-5 shadow-[3px_3px_0_#202124]">{children}</div>;
   const Next = ({ index }: { index: number }) => <div className="mt-7"><div className="grid gap-3 sm:grid-cols-2"><button onClick={() => finish(index)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Проверить</button><button onClick={() => setCurrentStep(index + 1)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Дальше →</button></div>{checked[index] && <p role="status" aria-live="polite" className={`mt-3 rounded-xl border-2 border-ink p-3 text-center font-black ${results[index] ? "bg-mint/50" : "bg-red-100 text-red-900"}`}>{results[index] ? "Всё правильно ✓ Раздел пройден." : "Есть ошибка. Красным отмечено, что нужно исправить — затем проверь ещё раз."}</p>}</div>;
+  const SchoolNext = () => <div className="mt-7"><div className="grid gap-3 sm:grid-cols-2"><button onClick={() => finish(6)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Проверить</button><button onClick={() => scrollWithinProfile("profile-comic")} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Дальше: комикс →</button></div>{checked[6] && <p role="status" aria-live="polite" className={`mt-3 rounded-xl border-2 border-ink p-3 text-center font-black ${results[6] ? "bg-mint/50" : "bg-red-100 text-red-900"}`}>{results[6] ? "Всё правильно ✓ Раздел пройден." : "Есть ошибка. Исправь ответы и проверь ещё раз."}</p>}</div>;
 
   const answerClass = (selected: boolean, correct: boolean, section: number) => selected
     ? checked[section] ? (correct ? "border-green-700 bg-green-200 text-green-950" : "border-red-700 bg-red-100 text-red-900") : "bg-blue-50"
@@ -222,12 +251,12 @@ export default function LessonOneGammaExperience() {
 
       <Block number={1} title="Вук Караджич и фонетический принцип" active={currentStep === 1}>
         <h2 className="mt-2 text-3xl font-black">Пиши као што говориш</h2>
+        <Narration src="/audio/lesson-1/03-bonus-history.m4a" label="Бонус: история сербского языка и как он сформировался" transcript="Дополнительная история о развитии сербского языка, его связи с другими славянскими языками и о том, как сформировалась современная литературная норма." bonus />
         <Narration src="/audio/lesson-1/04-vuk-karadzic.m4a" label="Вук Караджич и фонетический принцип" transcript="Вук Стефановић Караџић не создал сербский язык: сербы уже говорили на нём. Он реформировал литературный язык и письмо, приблизив их к живой народной речи. Главный принцип: ‘Пиши као што говориш, читај као што је написано’ — пиши, как говоришь, и читай, как написано." />
         <div className="mt-5 grid gap-4 sm:grid-cols-[180px_1fr] sm:items-center"><img src={media.vuk} alt="Портрет Вука Стефановича Караджича" className="w-full rounded-xl border-2 border-ink" /><div><p className="text-xl font-black">Пиши као што говориш, читај као што је написано!</p><p className="mt-2">Вук Стефановић Караџић не «создал сербский язык»: сербы уже говорили на нём. Он реформировал литературный язык и письмо, приблизив их к живой народной речи.</p></div></div>
         <div className="mt-5 rounded-xl border-2 border-ink bg-mint/25 p-5"><p className="font-black">Что именно изменилось?</p><ol className="mt-2 list-decimal space-y-2 pl-6"><li>За основу литературного языка взята живая народная речь.</li><li>Убраны лишние старые буквы, которые не соответствовали отдельным звукам.</li><li>Добавлены или закреплены буквы для сербских звуков: Ј, Љ, Њ, Ћ, Ђ, Џ.</li><li>Получился принцип «один звук — одна буква».</li></ol></div>
         <img src={media.oldAlphabet} alt="Буквы старой кириллицы до реформы Вука Караджича" className="mt-5 w-full rounded-xl border-2 border-ink bg-white object-contain" />
-        <Narration src="/audio/lesson-1/03-bonus-history.m4a" label="Бонус: история сербского языка и как он сформировался" transcript="Дополнительная история о развитии сербского языка, его связи с другими славянскими языками и о том, как сформировалась современная литературная норма." bonus />
-        <div className="mt-6 space-y-3">{letters.map(([cy,lat,example,sound,audioSrc]) => <Card key={cy}><div className="flex items-center justify-between gap-3"><div><p className="text-2xl font-black">{cy} / {lat}</p><p>{example} · слышим {sound}</p></div><PronunciationButton src={audioSrc} word={example} /></div></Card>)}</div>
+        <div className="mt-6 space-y-3">{letters.map(([cy,lat,example,sound,audioSrc]) => <Card key={cy}><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-2xl font-black">{cy} / {lat}</p><p>{example} · слышим {sound}</p></div><PronunciationButton word={example} isPlaying={activeClip === audioSrc && clipPlaying} onToggle={() => toggleClip(audioSrc)} /></div></Card>)}</div>
         <h3 className="mt-8 text-xl font-black">Соедини звук и букву</h3>
         {[["Й","Ј"],["ЛЬ","Љ"],["НЬ","Њ"],["ДЖ","Џ"]].map(([sound,correct]) => <div key={sound} className="mt-4"><p className="font-black">Слышим {sound}</p><div className="mt-2 flex gap-2">{["Ј","Љ","Њ","Џ"].map(option => <button key={option} onClick={() => { setLetterAnswers({...letterAnswers,[sound]:option}); setChecked(old => ({...old, 1:false})); }} className={`min-h-12 flex-1 rounded-xl border-2 border-ink font-black ${answerClass(letterAnswers[sound]===option, option===correct, 1)}`}>{option}</button>)}</div>{checked[1] && letterAnswers[sound] && <p className={`mt-2 rounded-lg p-3 text-sm ${letterAnswers[sound] === correct ? "bg-mint/30" : "bg-red-50"}`}>Звук {sound} записывается буквой <strong>{correct}</strong>.</p>}</div>)}
         <Next index={1} />
@@ -276,12 +305,13 @@ export default function LessonOneGammaExperience() {
       <Block number={6} title="Рассказываю о себе" active={currentStep === 6}>
         <h2 className="mt-2 text-3xl font-black">От имени к профессии</h2>
         <p className="mt-3">Прочитай все шесть текстов. Заметь повторяющиеся конструкции: имя, возраст, город, учёба или работа.</p>
-        <div className="mt-5 space-y-4">{people.map((person, index) => <Card key={person.name}><div className="flex items-start justify-between gap-3"><div><p className="text-xl font-black">{index + 1}. {person.name}</p><p className="mt-2">{person.text}</p></div><PronunciationButton src={person.audio} word={`текст о ${person.name}`} /></div></Card>)}</div>
+        <div className="mt-5 space-y-4">{people.map((person, index) => <Card key={person.name}><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0 flex-1"><p className="text-xl font-black">{index + 1}. {person.name}</p><p className="mt-2">{person.text}</p></div><PronunciationButton word={`текст о ${person.name}`} isPlaying={activeClip === person.audio && clipPlaying} onToggle={() => toggleClip(person.audio)} /></div></Card>)}</div>
         <div className="mt-5 rounded-xl border-2 border-ink bg-blue-50 p-5"><p className="font-black">Как читать эти тексты</p><p className="mt-2"><em>Ја сам / Зовем се</em> — имя; <em>Имам … година</em> — возраст; <em>Ја сам из… / Живим у…</em> — происхождение и место жительства; <em>Студирам / Радим / Идем у школу</em> — занятие.</p></div>
         <h3 className="mt-7 text-xl font-black">Скажи о себе вслух</h3><p>Ja sam ____. Ja sam iz ____. Imam ____ godina. Ja sam ____.</p>
         <p className="mt-3 text-sm text-ink/65">Микрофон не нужен: произнеси четыре фразы, затем повтори без шаблона.</p>
+        <button onClick={() => scrollWithinProfile("profile-school")} className="focus-ring mt-8 min-h-12 w-full rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Дальше: школьная лексика →</button>
 
-        <h2 className="mt-10 text-3xl font-black">Школьная лексика</h2>
+        <h2 id="profile-school" className="mt-10 scroll-mt-24 text-3xl font-black">Школьная лексика</h2>
         <p className="mt-3">Рассмотри иллюстрации и прочитай все слова вслух.</p>
         <Narration src="/audio/lesson-1/11-school-vocabulary.m4a" label="Школьная лексика" transcript="Школьная лексика: свеска — тетрадь, столица — стул, књига — книга, рачунар — компьютер, оловка — карандаш, телефон — телефон, кључ — ключ, торба — сумка." />
         <img
@@ -293,13 +323,14 @@ export default function LessonOneGammaExperience() {
         <h3 className="mt-8 text-2xl font-black">Соедини картинку и слово</h3>
         <p className="mt-2">Для каждого предмета выбери сербское слово.</p>
         <div className="mt-5 space-y-5">{schoolWords.map(([emoji,word,ru], wordIndex) => { const options = wordIndex < 4 ? schoolWords.slice(0,4) : schoolWords.slice(4); return <div key={word} className="rounded-xl border-2 border-ink bg-white p-4"><p className="text-center"><span className="text-5xl" role="img" aria-label={ru}>{emoji}</span><br /><strong>{ru}</strong></p><div className="mt-3 grid grid-cols-2 gap-2">{options.map(([,option])=><button key={option} onClick={()=>{ setSchoolAnswers({...schoolAnswers,[word]:option}); setChecked(old => ({...old, 6:false})); }} className={`min-h-12 rounded-xl border-2 border-ink px-2 ${answerClass(schoolAnswers[word]===option, option===word, 6)}`}>{option}</button>)}</div>{checked[6] && schoolAnswers[word] && <p className={`mt-3 rounded-lg p-3 text-sm ${schoolAnswers[word] === word ? "bg-mint/30" : "bg-red-50"}`}>{schoolAnswers[word] === word ? "Верно" : "Правильный ответ"}: <strong>{word}</strong> — {ru}.</p>}</div>; })}</div>
-        <Next index={6} />
+        <SchoolNext />
 
-        <h2 className="mt-10 text-3xl font-black">Полина и Хари Потер у школи</h2>
+        <h2 id="profile-comic" className="mt-10 scroll-mt-24 text-3xl font-black">Полина и Хари Потер у школи</h2>
         <p className="mt-3">Прочитай комикс по порядку. В нём повторяются слова <strong>школа, књига, торба, предмет</strong> и фразы знакомства.</p>
         <Narration src="/audio/lesson-1/12-comic.m4a" label="Комикс: Полина и Хари Потер у школи" transcript={'Полина: „Ја сам Полина и ја сам у школи! Али где је моја књига?“\nХари: „Здраво! Ја се зовем Хари! А ти?“\nПолина: „Здраво, Хари. Ја сам Полина. Не могу да нађем своју књигу…“\nХари: „Абракадабра!“\nХари: „Мислим да то није твоја књига… Извини.“\nПолина: „Ево је моја књига! Хвала ти, Хари!“\nХари: „Нема на чему! Који је твој омиљени предмет?“\nПолина: „Мој омиљени предмет је математика, а твој?“\nХари: „Магија!“'} />
         <div className="mt-5 space-y-4">{media.comic.map((src,i)=><figure key={src}><img src={src} alt={["Полина в школе не может найти книгу","Полина знакомится с Хари","Хари колдует и из сумки появляется лягушка","Хари ошибся: книга падает ему на голову","Полина получает свою книгу и благодарит Хари","Полина и Хари говорят о любимых школьных предметах","Хари отвечает: магия"][i]} className="w-full rounded-xl border-2 border-ink bg-white" /><figcaption className="mt-2 text-sm text-ink/65">Кадр {i+1} из 7</figcaption></figure>)}</div>
         <div className="mt-5 rounded-xl border-2 border-ink bg-white p-5"><p className="font-black">Текст комикса</p><p className="mt-2">Полина: „Ја сам Полина и ја сам у школи! Али где је моја књига?“<br />Полина: „Здраво, Хари. Ја сам Полина. Не могу да нађем своју књигу…“<br />Хари: „Здраво! Ја се зовем Хари! А ти?“<br />Хари: „Абракадабра!“<br />Хари: „Мислим да то није твоја књига… Извини.“<br />Полина: „Ево је моја књига! Хвала ти, Хари!“<br />Полина: „Мој омиљени предмет је математика, а твој?“<br />Хари: „Нема на чему! Који је твој омиљени предмет? Магија!“</p></div>
+        <Next index={6} />
       </Block>
 
       <Block number={7} title="Род именица у једнини" active={currentStep === 7}>
