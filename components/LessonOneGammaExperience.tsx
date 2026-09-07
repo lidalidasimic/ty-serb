@@ -67,6 +67,15 @@ const schoolWords = [
   ["🔑", "кључ", "ключ"], ["🎒", "торба", "сумка"],
 ];
 
+const studentExamples = [
+  "Ја сам Кирил. Ја сам из Санкт-Петербурга. Моја девојка се зове Снежана. Она је исто из Санкт-Петербурга. Ја имам тридесет пет година.",
+  "Ја сам Александар. Ја сам из Ижевска. Моја сестра се зове Ана. Она је исто из Ижевска. Ја имам двадесет осам година. Живим на Вождовцу!",
+  "Ja sam Vasja. Ja sam iz Sankt-Peterburga. Ja imam osamnaest godina. Moja sestra se zove Olesja. Ona živi u Baru u Crnoj Gori.",
+  "Ja sam Olesja. Ja sam iz Crne Gore. Ja imam dvadeset dve godine. Moj muž se zove Nikita, on je programer.",
+  "Ja sam Irina. Ja sam iz Tule! Ja imam dvadeset i pet godina. Ja sam zoolog! Moja sestra se zove Saša! Ona živi u Tuli. Ona ima šestnaest godina. Ona ide u školu!",
+  "Ja sam Ana. Ja sam iz Rusije. Moja sestra se zove Saša. Ona živi u Crnoj Gori. Imam dvadeset šest godina, a moja sestra ima dvadeset i tri godine.",
+];
+
 function Narration({ src, label, transcript, bonus = false }: { src: string; label: string; transcript: string; bonus?: boolean }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [speed, setSpeed] = useState<1 | 1.5>(1);
@@ -213,7 +222,7 @@ export default function LessonOneGammaExperience() {
   };
 
   const Card = ({ children }: { children: React.ReactNode }) => <div className="rounded-xl border-2 border-ink bg-white p-5 shadow-[3px_3px_0_#202124]">{children}</div>;
-  const Next = ({ index }: { index: number }) => <div className="mt-7"><div className="grid gap-3 sm:grid-cols-2"><button onClick={() => finish(index)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Проверить</button><button onClick={() => setCurrentStep(index + 1)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Дальше →</button></div>{checked[index] && <p role="status" aria-live="polite" className={`mt-3 rounded-xl border-2 border-ink p-3 text-center font-black ${results[index] ? "bg-mint/50" : "bg-red-100 text-red-900"}`}>{results[index] ? "Всё правильно ✓ Раздел пройден." : "Есть ошибка. Красным отмечено, что нужно исправить — затем проверь ещё раз."}</p>}</div>;
+  const Next = ({ index }: { index: number }) => <div className="mt-7"><div className={`grid gap-3 ${index > 0 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}><button onClick={() => finish(index)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Проверить</button>{index > 0 ? <button onClick={() => setCurrentStep(index - 1)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-white px-5 py-3 font-black shadow-[3px_3px_0_#202124]">← Вернуться</button> : null}<button onClick={() => setCurrentStep(index + 1)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Дальше →</button></div>{checked[index] && <p role="status" aria-live="polite" className={`mt-3 rounded-xl border-2 border-ink p-3 text-center font-black ${results[index] ? "bg-mint/50" : "bg-red-100 text-red-900"}`}>{results[index] ? "Всё правильно ✓ Раздел пройден." : "Есть ошибка. Красным отмечено, что нужно исправить — затем проверь ещё раз."}</p>}</div>;
   const SchoolNext = () => <div className="mt-7"><div className="grid gap-3 sm:grid-cols-2"><button onClick={() => finish(6)} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Проверить</button><button onClick={() => scrollWithinProfile("profile-comic")} className="focus-ring min-h-12 rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Дальше: комикс →</button></div>{checked[6] && <p role="status" aria-live="polite" className={`mt-3 rounded-xl border-2 border-ink p-3 text-center font-black ${results[6] ? "bg-mint/50" : "bg-red-100 text-red-900"}`}>{results[6] ? "Всё правильно ✓ Раздел пройден." : "Есть ошибка. Исправь ответы и проверь ещё раз."}</p>}</div>;
 
   const answerClass = (selected: boolean, correct: boolean, section: number) => selected
@@ -345,7 +354,13 @@ export default function LessonOneGammaExperience() {
         <p className="font-black uppercase tracking-[.14em] text-serbian-red">Домашний задание</p>
         <h2 className="mt-2 text-3xl font-black">Закрепи урок</h2>
         <Card><ol className="list-decimal space-y-3 pl-6"><li><strong>Новые слова:</strong> выпиши слова, которые хочешь использовать.</li><li><strong>Напиши короткий текст о себе:</strong> имя, город, возраст, профессия или учёба, один близкий человек.</li><li><strong>Прочитай текст вслух</strong> сначала с подсказкой, затем без неё.</li></ol></Card>
+        <div className="mt-7">
+          <h3 className="text-2xl font-black">Примеры текстов других учеников</h3>
+          <p className="mt-2">Можно писать кириллицей или латиницей. Используй примеры как опору, но расскажи именно о себе.</p>
+          <div className="mt-4 space-y-4">{studentExamples.map((example, index) => <Card key={example}><p className="mb-2 font-black text-serbian-blue">Пример {index + 1}</p><p>{example}</p></Card>)}</div>
+        </div>
         <LearningExercise title="Повторение: новые слова урока" appId="po4gcggtv26" />
+        <button onClick={() => setCurrentStep(7)} className="focus-ring mt-7 min-h-12 w-full rounded-xl border-2 border-ink bg-white px-5 py-3 font-black shadow-[3px_3px_0_#202124]">← Вернуться к предыдущему разделу</button>
         <button onClick={() => setDone(true)} className="focus-ring mt-7 min-h-12 w-full rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Завершить урок</button>
         {done && <div className="mt-5 rounded-xl border-2 border-ink bg-mint/40 p-6 text-center"><Check className="mx-auto" size={40} /><h3 className="mt-2 text-3xl font-black">Први час је готов!</h3><p>Структура лекции пройдена полностью. Сачувај текст о себи — он понадобится дальше.</p></div>}
       </section> : null}
