@@ -41,6 +41,8 @@ function getRegisterErrorMessage(error: unknown) {
 }
 
 export async function registerAction(formData: FormData) {
+  const requestedNext = String(formData.get("next") ?? "/access");
+  const next = requestedNext.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/access";
   try {
     await signUpWithPassword({
       email: String(formData.get("email") ?? "").trim(),
@@ -57,8 +59,8 @@ export async function registerAction(formData: FormData) {
         ? "auth_register_failed_email_rate_limit"
         : "auth_register_failed",
     });
-    redirect(`/register?error=${encodeURIComponent(message)}`);
+    redirect(`/register?next=${encodeURIComponent(next)}&error=${encodeURIComponent(message)}`);
   }
 
-  redirect("/access");
+  redirect(next || "/access");
 }

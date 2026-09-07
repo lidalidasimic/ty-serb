@@ -236,7 +236,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
               </div>
             </div>
           </section>
-          <LessonOneGammaExperience />
+          <LessonOneGammaExperience isAuthenticated={Boolean(user)} />
         </>
       ) : null}
     </>

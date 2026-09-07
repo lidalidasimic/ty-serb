@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Check, Pause, Play, Volume2 } from "lucide-react";
 import { cyrillicAlphabetImage, latinAlphabetImage } from "@/data/alphabet-images";
@@ -151,7 +152,7 @@ function Block({ number, title, children, active }: { number: number; title: str
   </section>;
 }
 
-export default function LessonOneGammaExperience() {
+export default function LessonOneGammaExperience({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [completed, setCompleted] = useState<number[]>([]);
   const [cognateAnswers, setCognateAnswers] = useState<Record<string, string>>({});
@@ -241,7 +242,7 @@ export default function LessonOneGammaExperience() {
     <div className="mx-auto max-w-[640px] text-[17px] leading-7 text-ink">
       <div className="sticky top-0 z-20 -mx-4 border-b-2 border-ink bg-[#fffdf8]/95 px-4 py-3 backdrop-blur">
         <div className="flex justify-between gap-3 text-sm font-black"><span>Урок 1 · по структуре лекции</span><span>{completed.length}/8</span></div>
-        <div className="mt-2 grid grid-cols-8 gap-1">{sections.map((name, i) => <div key={name} title={name} className={`h-2 rounded-full border border-ink ${completed.includes(i) ? "bg-serbian-red" : "bg-white"}`} />)}</div>
+        <div className="mt-2 grid grid-cols-8 gap-1">{sections.map((name, i) => <button key={name} type="button" title={`${i + 1}. ${name}`} aria-label={`Перейти к разделу ${i + 1}: ${name}`} aria-current={currentStep === i ? "step" : undefined} onClick={() => { setCurrentStep(i); if (i === 6) setProfilePage("people"); }} className={`focus-ring h-6 rounded-md border-2 border-ink transition hover:-translate-y-0.5 ${currentStep === i ? "bg-serbian-blue shadow-[2px_2px_0_#202124]" : completed.includes(i) ? "bg-serbian-red" : "bg-white"}`} />)}</div>
       </div>
 
       <header className="py-10">
@@ -341,9 +342,9 @@ export default function LessonOneGammaExperience() {
           className="mt-4 w-full rounded-xl border-2 border-ink bg-white"
         />
 
-        <h3 className="mt-8 text-2xl font-black">Соедини картинку и слово</h3>
-        <p className="mt-2">Для каждого предмета выбери сербское слово.</p>
-        <div className="mt-5 space-y-5">{schoolWords.map(([emoji,word,ru], wordIndex) => { const options = wordIndex < 4 ? schoolWords.slice(0,4) : schoolWords.slice(4); return <div key={word} className="rounded-xl border-2 border-ink bg-white p-4"><p className="text-center"><span className="text-5xl" role="img" aria-label={ru}>{emoji}</span><br /><strong>{ru}</strong></p><div className="mt-3 grid grid-cols-2 gap-2">{options.map(([,option])=><button key={option} onClick={()=>{ setSchoolAnswers({...schoolAnswers,[word]:option}); setChecked(old => ({...old, 6:false})); }} className={`min-h-12 rounded-xl border-2 border-ink px-2 ${answerClass(schoolAnswers[word]===option, option===word, 6)}`}>{option}</button>)}</div>{checked[6] && schoolAnswers[word] && <p className={`mt-3 rounded-lg p-3 text-sm ${schoolAnswers[word] === word ? "bg-mint/30" : "bg-red-50"}`}>{schoolAnswers[word] === word ? "Верно" : "Правильный ответ"}: <strong>{word}</strong> — {ru}.</p>}</div>; })}</div>
+        <h3 className="mt-8 text-2xl font-black">Быстрая проверка слов</h3>
+        <p className="mt-2">Выбери сербское название предмета. Все восемь заданий помещаются в компактной сетке.</p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">{schoolWords.map(([emoji,word,ru], wordIndex) => { const options = wordIndex < 4 ? schoolWords.slice(0,4) : schoolWords.slice(4); return <label key={word} className={`rounded-xl border-2 border-ink p-3 ${checked[6] && schoolAnswers[word] ? schoolAnswers[word] === word ? "bg-green-100" : "bg-red-50" : "bg-white"}`}><span className="flex items-center gap-3"><span className="text-3xl" role="img" aria-label={ru}>{emoji}</span><span className="font-black">{ru}</span></span><select value={schoolAnswers[word] || ""} onChange={event=>{ setSchoolAnswers({...schoolAnswers,[word]:event.target.value}); setChecked(old => ({...old, 6:false})); }} className="focus-ring mt-2 min-h-11 w-full rounded-lg border-2 border-ink bg-white px-2 font-bold"><option value="">Выбери слово</option>{options.map(([,option])=><option key={option} value={option}>{option}</option>)}</select>{checked[6] && schoolAnswers[word] && schoolAnswers[word] !== word ? <span className="mt-2 block text-sm">Ответ: <strong>{word}</strong></span> : null}</label>; })}</div>
         <SchoolNext />
 
         <h2 id="profile-comic" className="mt-10 scroll-mt-24 text-3xl font-black">Полина и Хари Потер у школи</h2>
@@ -375,7 +376,7 @@ export default function LessonOneGammaExperience() {
         <LearningExercise title="Повторение: новые слова урока" appId="po4gcggtv26" />
         <button onClick={() => setCurrentStep(7)} className="focus-ring mt-7 min-h-12 w-full rounded-xl border-2 border-ink bg-white px-5 py-3 font-black shadow-[3px_3px_0_#202124]">← Вернуться к предыдущему разделу</button>
         <button onClick={() => setDone(true)} className="focus-ring mt-7 min-h-12 w-full rounded-xl border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Завершить урок</button>
-        {done && <div className="mt-5 rounded-xl border-2 border-ink bg-mint/40 p-6 text-center"><Check className="mx-auto" size={40} /><h3 className="mt-2 text-3xl font-black">Први час је готов!</h3><p>Структура лекции пройдена полностью. Сачувај текст о себи — он понадобится дальше.</p></div>}
+        {done && <><div className="mt-5 rounded-xl border-2 border-ink bg-mint/40 p-6 text-center"><Check className="mx-auto" size={40} /><h3 className="mt-2 text-3xl font-black">Први час је готов!</h3><p>Структура лекции пройдена полностью. Сачувај текст о себи — он понадобится дальше.</p></div>{isAuthenticated ? <Link href="/lessons/kak-predstavitsya" className="focus-ring mt-5 flex min-h-12 w-full items-center justify-center rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 text-center font-black text-white shadow-[3px_3px_0_#202124]">Перейти к уроку 2 →</Link> : <div className="mt-5 rounded-xl border-2 border-ink bg-white p-5 shadow-[3px_3px_0_#202124]"><p className="font-black">Продолжить обучение</p><p className="mt-1">Войди в существующий аккаунт или зарегистрируйся, чтобы перейти к уроку 2.</p><div className="mt-4 grid gap-3 sm:grid-cols-2"><Link href="/login?next=/lessons/kak-predstavitsya" className="focus-ring flex min-h-12 items-center justify-center rounded-xl border-2 border-ink bg-serbian-blue px-4 text-center font-black text-white">Войти</Link><Link href="/register?next=/lessons/kak-predstavitsya" className="focus-ring flex min-h-12 items-center justify-center rounded-xl border-2 border-ink bg-serbian-red px-4 text-center font-black text-white">Создать аккаунт</Link></div></div>}</>}
       </section> : null}
     </div>
   </div>;

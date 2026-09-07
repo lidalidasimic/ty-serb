@@ -4,12 +4,14 @@ import { registerAction } from "@/app/register/actions";
 type RegisterPageProps = {
   searchParams?: Promise<{
     error?: string;
+    next?: string;
   }>;
 };
 
 export default async function RegisterPage({ searchParams }: RegisterPageProps) {
   const params = await searchParams;
   const error = params?.error;
+  const next = params?.next ?? "/access";
 
   return (
     <section className="px-4 py-16 sm:px-6 lg:px-8">
@@ -25,6 +27,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
           </div>
         ) : null}
         <form action={registerAction} className="mt-8 space-y-4">
+          <input type="hidden" name="next" value={next} />
           <label className="block">
             <span className="text-sm font-black">Имя</span>
             <input
