@@ -293,7 +293,12 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
 
   const finish = (index: number) => {
     setChecked(old => ({ ...old, [index]: true }));
-    setCompleted(old => results[index] && !old.includes(index) ? [...old, index] : old.filter(item => item !== index));
+    setCompleted(old => {
+      if (results[index]) {
+        return old.includes(index) ? old : [...old, index];
+      }
+      return old.filter(item => item !== index);
+    });
   };
 
   const Card = ({ children }: { children: React.ReactNode }) => <div className="rounded-xl border-2 border-ink bg-white p-5 shadow-[3px_3px_0_#202124]">{children}</div>;
