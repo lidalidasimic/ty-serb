@@ -145,6 +145,7 @@ function LearningExercise({ title, appId }: { title: string; appId: string }) {
 function Block({ number, title, children, active }: { number: number; title: string; children: React.ReactNode; active: boolean }) {
   if (!active) return null;
   return <section id={`gamma-step-${number}`} className="scroll-mt-24 border-t-2 border-ink py-10">
+    {number > 0 ? <p className="mb-5 font-black uppercase tracking-[.15em] text-serbian-blue">Учимо српски са Лидијом Симић!</p> : null}
     <p className="font-black uppercase tracking-[.14em] text-serbian-red">{number + 1}. {title}</p>
     {children}
   </section>;
@@ -159,6 +160,7 @@ export default function LessonOneGammaExperience() {
   const [schoolAnswers, setSchoolAnswers] = useState<Record<string, string>>({});
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [done, setDone] = useState(false);
+  const [profilePage, setProfilePage] = useState<"people" | "school">("people");
   const inlineAudioRef = useRef<HTMLAudioElement | null>(null);
   const [activeClip, setActiveClip] = useState<string | null>(null);
   const [clipPlaying, setClipPlaying] = useState(false);
@@ -203,6 +205,12 @@ export default function LessonOneGammaExperience() {
   const scrollWithinProfile = (id: string) => {
     inlineAudioRef.current?.pause();
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const showProfilePage = (page: "people" | "school") => {
+    inlineAudioRef.current?.pause();
+    setProfilePage(page);
+    requestAnimationFrame(() => document.getElementById("gamma-step-6")?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
   const results = [
@@ -312,15 +320,19 @@ export default function LessonOneGammaExperience() {
       </Block>
 
       <Block number={6} title="Рассказываю о себе" active={currentStep === 6}>
+        {profilePage === "people" ? <>
         <h2 className="mt-2 text-3xl font-black">От имени к профессии</h2>
         <p className="mt-3">Прочитай все шесть текстов. Заметь повторяющиеся конструкции: имя, возраст, город, учёба или работа.</p>
         <div className="mt-5 space-y-4">{people.map((person, index) => <Card key={person.name}><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0 flex-1"><p className="text-xl font-black">{index + 1}. {person.name}</p><p className="mt-2">{person.text}</p></div><PronunciationButton word={`текст о ${person.name}`} isPlaying={activeClip === person.audio && clipPlaying} onToggle={() => toggleClip(person.audio)} /></div></Card>)}</div>
         <div className="mt-5 rounded-xl border-2 border-ink bg-blue-50 p-5"><p className="font-black">Как читать эти тексты</p><p className="mt-2"><em>Ја сам / Зовем се</em> — имя; <em>Имам … година</em> — возраст; <em>Ја сам из… / Живим у…</em> — происхождение и место жительства; <em>Студирам / Радим / Идем у школу</em> — занятие.</p></div>
         <h3 className="mt-7 text-xl font-black">Скажи о себе вслух</h3><p>Ja sam ____. Ja sam iz ____. Imam ____ godina. Ja sam ____.</p>
         <p className="mt-3 text-sm text-ink/65">Микрофон не нужен: произнеси четыре фразы, затем повтори без шаблона.</p>
-        <button onClick={() => scrollWithinProfile("profile-school")} className="focus-ring mt-8 min-h-12 w-full rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Дальше: школьная лексика →</button>
+        <button onClick={() => showProfilePage("school")} className="focus-ring mt-8 min-h-12 w-full rounded-xl border-2 border-ink bg-serbian-blue px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">Дальше: школьная лексика →</button>
+        </> : null}
 
-        <h2 id="profile-school" className="mt-10 scroll-mt-24 text-3xl font-black">Школьная лексика</h2>
+        {profilePage === "school" ? <>
+        <button onClick={() => showProfilePage("people")} className="focus-ring mb-7 min-h-12 w-full rounded-xl border-2 border-ink bg-white px-5 py-3 font-black shadow-[3px_3px_0_#202124]">← Вернуться к рассказам о людях</button>
+        <h2 id="profile-school" className="mt-2 scroll-mt-24 text-3xl font-black">Школьная лексика</h2>
         <p className="mt-3">Рассмотри иллюстрации и прочитай все слова вслух.</p>
         <Narration src="/audio/lesson-1/11-school-vocabulary.m4a" label="Школьная лексика" transcript="Школьная лексика: свеска — тетрадь, столица — стул, књига — книга, рачунар — компьютер, оловка — карандаш, телефон — телефон, кључ — ключ, торба — сумка." />
         <img
@@ -340,6 +352,7 @@ export default function LessonOneGammaExperience() {
         <div className="mt-5 space-y-4">{media.comic.map((src,i)=><figure key={src}><img src={src} alt={["Полина в школе не может найти книгу","Полина знакомится с Хари","Хари колдует и из сумки появляется лягушка","Хари ошибся: книга падает ему на голову","Полина получает свою книгу и благодарит Хари","Полина и Хари говорят о любимых школьных предметах","Хари отвечает: магия"][i]} className="w-full rounded-xl border-2 border-ink bg-white" /><figcaption className="mt-2 text-sm text-ink/65">Кадр {i+1} из 7</figcaption></figure>)}</div>
         <div className="mt-5 rounded-xl border-2 border-ink bg-white p-5"><p className="font-black">Текст комикса</p><p className="mt-2">Полина: „Ја сам Полина и ја сам у школи! Али где је моја књига?“<br />Полина: „Здраво, Хари. Ја сам Полина. Не могу да нађем своју књигу…“<br />Хари: „Здраво! Ја се зовем Хари! А ти?“<br />Хари: „Абракадабра!“<br />Хари: „Мислим да то није твоја књига… Извини.“<br />Полина: „Ево је моја књига! Хвала ти, Хари!“<br />Полина: „Мој омиљени предмет је математика, а твој?“<br />Хари: „Нема на чему! Који је твој омиљени предмет? Магија!“</p></div>
         <Next index={6} />
+        </> : null}
       </Block>
 
       <Block number={7} title="Род именица у једнини" active={currentStep === 7}>
