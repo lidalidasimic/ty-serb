@@ -211,6 +211,7 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
   const [peopleAnswers, setPeopleAnswers] = useState<Record<number, string>>({});
   const [studentName, setStudentName] = useState("");
   const [introStatus, setIntroStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [introError, setIntroError] = useState("");
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [done, setDone] = useState(false);
   const [profilePage, setProfilePage] = useState<"people" | "school">("people");
@@ -273,9 +274,10 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
     setIntroStatus("sending");
     try {
       const response = await fetch("/api/lesson-feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lessonSlug: "azbuka-i-proiznoshenie", section: "introductions", name: "", message: studentName.trim(), kind: "introduction" }) });
-      if (!response.ok) { const data = await response.json().catch(() => ({})); throw new Error(data.error || "submit failed"); }
+      if (!response.ok) { const data = await response.json().catch(() => ({})); throw new Error(data.error || "Не получилось сохранить ответ"); }
       setIntroStatus("sent");
-    } catch { setIntroStatus("error"); }
+      setIntroError("");
+    } catch (error) { setIntroError(error instanceof Error ? error.message : "Не получилось сохранить ответ"); setIntroStatus("error"); }
   };
 
   const results = [
@@ -370,7 +372,7 @@ export default function LessonOneGammaExperience({ isAuthenticated = false }: { 
         <Narration src="/audio/lesson-1/08-greetings.m4a" label="Приветствия и знакомство" transcript={'Сусрет: Добар дан! Добро јутро! Добро вече! Здраво! Ћао!\n\nПредстављање: Ја се зовем… Зовем се… Ја сам… Драго ми је!\n\nРастанак: Довиђења. Пријатно! Видимо се! Ћао!'} />
         {[["Сусрет","Добар дан! Добро јутро! Добро вече! Здраво! Ћао!"],["Представљање","Ја се зовем… Зовем се… Ја сам… Драго ми је!"],["Растанак","Довиђења. Пријатно! Видимо се! Ћао!"]].map(([title,text]) => <div className="mt-4" key={title}><Card><p className="text-xl font-black">{title}</p><p>{text}</p></Card></div>)}
         <Card><p className="font-black">Пример дијалога</p><p className="mt-2">— Како се зовеш?<br />— Ја се зовем Света. А ти?<br />— Зовем се Сева. Драго ми је!</p></Card>
-        <div className="relative mt-6 rounded-[2rem] border-2 border-ink bg-white p-5 shadow-[3px_3px_0_#202124] after:absolute after:-bottom-3 after:left-10 after:h-6 after:w-6 after:rotate-45 after:border-b-2 after:border-r-2 after:border-ink after:bg-white"><label className="block"><span className="text-xl font-black">Как тебя зовут?</span><span className="mt-1 block text-sm text-ink/65">Напиши по-сербски: <em>Ja se zovem…</em> или <em>Zovem se…</em></span><input value={studentName} onChange={event => { setStudentName(event.target.value); setIntroStatus("idle"); setChecked(old => ({ ...old, 4: false })); }} className="focus-ring mt-3 w-full rounded-xl border-2 border-ink bg-blue-50 px-4 py-3 font-bold" placeholder="Ja se zovem…" /></label><button type="button" onClick={submitIntroduction} disabled={studentName.trim().length < 2 || introStatus === "sending"} className="focus-ring mt-3 min-h-11 rounded-lg border-2 border-ink bg-serbian-blue px-4 font-black text-white disabled:opacity-50">{introStatus === "sending" ? "Отправляем…" : "Отправить ответ"}</button>{introStatus === "sent" ? <p className="mt-2 text-sm font-black text-green-800">Ответ отправлен на проверку ✓</p> : null}{introStatus === "error" ? <p className="mt-2 text-sm font-black text-red-800">Не получилось отправить.</p> : null}<CommunityList section="introductions" /></div>
+        <div className="relative mt-6 rounded-[2rem] border-2 border-ink bg-white p-5 shadow-[3px_3px_0_#202124] after:absolute after:-bottom-3 after:left-10 after:h-6 after:w-6 after:rotate-45 after:border-b-2 after:border-r-2 after:border-ink after:bg-white"><label className="block"><span className="text-xl font-black">Как тебя зовут?</span><span className="mt-1 block text-sm text-ink/65">Напиши по-сербски: <em>Ja se zovem…</em> или <em>Zovem se…</em></span><input value={studentName} onChange={event => { setStudentName(event.target.value); setIntroError(""); setIntroStatus("idle"); setChecked(old => ({ ...old, 4: false })); }} className="focus-ring mt-3 w-full rounded-xl border-2 border-ink bg-blue-50 px-4 py-3 font-bold" placeholder="Ja se zovem…" /></label><button type="button" onClick={submitIntroduction} disabled={studentName.trim().length < 2 || introStatus === "sending"} className="focus-ring mt-3 min-h-11 rounded-lg border-2 border-ink bg-serbian-blue px-4 font-black text-white disabled:opacity-50">{introStatus === "sending" ? "Отправляем…" : "Отправить ответ"}</button>{introStatus === "sent" ? <p className="mt-2 text-sm font-black text-green-800">Ответ отправлен на проверку ✓</p> : null}{introStatus === "error" ? <p className="mt-2 text-sm font-black text-red-800">{introError}</p> : null}<CommunityList section="introductions" /></div>
         <p className="mt-4 rounded-xl bg-blue-50 p-4"><strong>Как строится знакомство:</strong> приветствие → имя → вопрос <em>А ти?</em> → фраза <em>Драго ми је</em>. «Здраво» нейтрально, «ћао» более неформально.</p>
         <Next index={4} />
       </Block>
