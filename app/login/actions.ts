@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { signInWithPassword, clearSessionCookies, logActivity } from "@/lib/supabase-server";
+import { isAdminEmail } from "@/lib/access-control";
 
 function getLoginErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : "";
@@ -48,6 +49,15 @@ export async function loginAction(formData: FormData) {
       actionType: "auth_login_failed",
     });
     redirect(`/login?next=${encodeURIComponent(next)}&error=${encodeURIComponent(message)}`);
+  }
+
+  if (next.startsWith("/admin") && !isAdminEmail(email)) {
+    await clearSessionCookies();
+    redirect(
+      `/login?next=${encodeURIComponent(next)}&error=${encodeURIComponent(
+        "Вход выполнен, но этот email не назначен администратором.",
+      )}`,
+    );
   }
 
   redirect(next || "/lessons");
