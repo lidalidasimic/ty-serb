@@ -11,6 +11,8 @@ export type AppUser = {
   isAdmin: boolean;
 };
 
+const ownerAdminEmail = "lidalidasimic@gmail.com";
+
 export function isDemoLesson(lesson: Pick<Lesson, "number">) {
   return lesson.number === 1;
 }
@@ -24,10 +26,12 @@ export function canOpenLesson(user: AppUser | null, lesson: Pick<Lesson, "number
 }
 
 export function getAdminEmails() {
-  return (process.env.ADMIN_EMAILS ?? "")
+  const configuredEmails = (process.env.ADMIN_EMAILS ?? "")
     .split(",")
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);
+
+  return Array.from(new Set([ownerAdminEmail, ...configuredEmails]));
 }
 
 export function isAdminEmail(email?: string | null) {
