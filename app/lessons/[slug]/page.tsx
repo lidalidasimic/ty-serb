@@ -13,8 +13,7 @@ import { getLessonBySlug, lessons } from "@/data/lessons";
 import { canOpenLesson } from "@/lib/access-control";
 import { getCurrentUser, logActivity } from "@/lib/supabase-server";
 import LessonOneGammaExperience from "@/components/LessonOneGammaExperience";
-import LessonTwoPractice from "@/components/LessonTwoPractice";
-import LessonTwoContent from "@/components/LessonTwoContent";
+import LessonTwoExperience from "@/components/LessonTwoExperience";
 
 type LessonPageProps = {
   params: Promise<{
@@ -241,7 +240,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
           <LessonOneGammaExperience isAuthenticated={Boolean(user)} />
         </>
       ) : null}
-      {lesson.number === 2 ? (<>\n        <LessonTwoContent />\n        <LessonTwoPractice />\n      </>) : null}
+      {lesson.number === 2 ? <LessonTwoExperience /> : null}
     </>
   );
 }
