@@ -296,6 +296,22 @@ export const lessons: Lesson[] = [
     grammarFocus: [],
     extraNotes: "",
   },
+  {
+    number: 17,
+    slug: "dusanovo-carstvo",
+    title: "Лекция 17. Душаново царство. Прошедшее время.",
+    level: "A1+",
+    topic: "Цар Душан, история Сербии и перфекат",
+    status: "готово",
+    description: "Исторический урок о Душановом царстве: читаем о царе Душане, изучаем ключевые даты и лексику, а затем говорим о прошлом с помощью перфеката.",
+    gammaLink: "#lesson-17-start",
+    homeworkLink: "#lesson-17-start",
+    telegramPostLink: "https://t.me/tyserb",
+    worksheetLink: "",
+    vocabulary: ["царство", "цар", "освојити", "крунисати", "донети закон", "умрети"],
+    grammarFocus: ["перфекат: је + радни глаголски придев", "пассивная форма: је крунисан"],
+    extraNotes: "Полноценная интерактивная страница внутри платформы: текст, даты, лексика, грамматика, тест и домашнее задание.",
+  },
 ];
 
 export function getLessonBySlug(slug: string) {
