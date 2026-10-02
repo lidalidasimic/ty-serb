@@ -312,6 +312,24 @@ export const lessons: Lesson[] = [
     grammarFocus: ["перфекат: је + радни глаголски придев", "пассивная форма: је крунисан"],
     extraNotes: "Полноценная интерактивная страница внутри платформы: текст, даты, лексика, грамматика, тест и домашнее задание.",
   },
+  {
+    number: 18,
+    slug: "misija-rtanj",
+    title: "Лекция 18. Футур 1. Мисија Ртањ.",
+    level: "A1+",
+    topic: "Будущее время: планы, обещания и вопросы",
+    status: "готово",
+    description:
+      "Планируем поездку на Ртань: читаем комикс, изучаем будущее время и новые слова, выполняем упражнения и рассказываем о своих планах.",
+    gammaLink: "https://ty-serb.vercel.app/lessons/misija-rtanj#lesson-18-start",
+    homeworkLink: "https://ty-serb.vercel.app/lessons/misija-rtanj#lesson-18-start",
+    telegramPostLink: "https://t.me/tyserb",
+    worksheetLink: "",
+    vocabulary: ["планина", "планинарење", "рута", "опрема", "понети", "чувати"],
+    grammarFocus: ["футур 1: ћу + инфинитив", "отрицание нећу", "вопросы с да ли"],
+    extraNotes:
+      "Интерактивный урок с девятью разделами и аудиоплеером в каждом разделе. Аудиозаписи будут добавлены отдельно.",
+  },
 ];
 
 export function getLessonBySlug(slug: string) {

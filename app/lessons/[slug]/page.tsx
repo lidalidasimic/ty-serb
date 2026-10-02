@@ -14,6 +14,7 @@ import { canOpenLesson } from "@/lib/access-control";
 import { getCurrentUser, logActivity } from "@/lib/supabase-server";
 import LessonOneGammaExperience from "@/components/LessonOneGammaExperience";
 import LessonSeventeenExperience from "@/components/LessonSeventeenExperience";
+import LessonEighteenExperience from "@/components/LessonEighteenExperience";
 
 type LessonPageProps = {
   params: Promise<{
@@ -88,6 +89,10 @@ export default async function LessonPage({ params }: LessonPageProps) {
     lessonSlug: lesson.slug,
     actionType: "lesson_opened",
   });
+
+  if (lesson.number === 18) {
+    return <LessonEighteenExperience />;
+  }
 
   const isReady = lesson.status === "готово";
   const hasWorksheet = lesson.worksheetLink.trim().length > 0;

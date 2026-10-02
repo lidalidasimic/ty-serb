@@ -6,7 +6,7 @@ import { getCurrentUser, logActivity } from "@/lib/supabase-server";
 type MaterialRouteProps = {
   params: Promise<{
     slug: string;
-    kind: "gamma" | "worksheet" | "homework" | "telegram";
+    kind: string;
   }>;
 };
 
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest, { params }: MaterialRouteProps) 
   const { slug, kind } = await params;
   const lesson = getLessonBySlug(slug);
 
-  if (!lesson) {
+  if (!lesson || !["gamma", "worksheet", "homework", "telegram"].includes(kind)) {
     return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
   }
 
