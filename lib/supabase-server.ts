@@ -430,7 +430,7 @@ export async function saveLessonFeedback(params: {
 
 export async function listApprovedLessonFeedback(section: string) {
   const events = (await supabaseAdminFetch(
-    "/rest/v1/activity_events?select=id,action_type,created_at&action_type=like.lesson_feedback_approved:*&order=created_at.desc&limit=100",
+    "/rest/v1/activity_events?select=id,action_type,created_at&lesson_slug=eq.azbuka-i-proiznoshenie&action_type=like.lesson_feedback_approved:*&order=created_at.desc&limit=100",
   )) as Pick<ActivityEvent, "id" | "action_type" | "created_at">[];
   return events.flatMap(event => {
     const prefix = "lesson_feedback_approved:";

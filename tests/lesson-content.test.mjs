@@ -134,6 +134,57 @@ test("lesson 3 appears below existing materials only for approved students", asy
   }
 });
 
+function createFeedbackRoute(fail = false) {
+  const submissions = [];
+  const route = loadModule("app/api/lesson-feedback/route.ts", {
+    "@/lib/supabase-server": {
+      getCurrentUser: async () => null,
+      listApprovedLessonFeedback: async () => [],
+      saveLessonFeedback: async (entry) => { if (fail) throw new Error("private database failure"); submissions.push(entry); },
+    },
+  });
+  const submit = (body, origin = "https://ty-serb-lesson-three.lixi141210.chatgpt.site") => route.POST(new Request("https://ty-serb.vercel.app/api/lesson-feedback", {
+    method: "POST", headers: { "Content-Type": "application/json", origin }, body: JSON.stringify(body),
+  }));
+  return { route, submissions, submit };
+}
+
+test("lesson 3 feedback accepts only its known sections and preserves lesson 1 submissions", async () => {
+  for (const section of ["intro", "comic", "countries", "taxi", "plural", "words", "possessives", "practice", "recap", "homework"]) {
+    const route = createFeedbackRoute();
+    const response = await route.submit({ lessonSlug: lessonThreeSlug, section: `l3-${section}`, name: "Лида", message: "Мой вопрос" });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("access-control-allow-origin"), "https://ty-serb-lesson-three.lixi141210.chatgpt.site");
+    assert.equal(route.submissions[0].lessonSlug, lessonThreeSlug);
+    assert.equal(route.submissions[0].section, `l3-${section}`);
+    assert.equal(route.submissions[0].kind, "feedback");
+    assert.equal((await route.submit({ lessonSlug: lessonThreeSlug, section: `l3-${section}`, message: "Ещё вопрос" })).status, 429);
+  }
+  const first = createFeedbackRoute();
+  assert.equal((await first.submit({ lessonSlug: "azbuka-i-proiznoshenie", section: "introductions", message: "Ja se zovem…", kind: "introduction" }, "https://ty-serb.vercel.app")).status, 200);
+  assert.equal(first.submissions[0].kind, "introduction");
+  const invalid = createFeedbackRoute();
+  for (const extra of [{ section: "l3-unknown" }, { message: " " }, { kind: "introduction" }, { lessonSlug: "unknown" }]) {
+    assert.equal((await invalid.submit({ lessonSlug: lessonThreeSlug, section: "l3-intro", message: "Вопрос", ...extra })).status, 400);
+  }
+  assert.equal(invalid.submissions.length, 0);
+});
+
+test("feedback preflight is limited to the lesson Site and failures do not claim delivery", async () => {
+  const route = createFeedbackRoute(true);
+  const response = await route.route.OPTIONS(new Request("https://ty-serb.vercel.app/api/lesson-feedback", {
+    method: "OPTIONS", headers: { origin: "https://ty-serb-lesson-three.lixi141210.chatgpt.site" },
+  }));
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("access-control-allow-methods"), "POST, OPTIONS");
+  assert.equal(response.headers.get("access-control-allow-credentials"), null);
+  assert.equal((await route.route.OPTIONS(new Request("https://ty-serb.vercel.app/api/lesson-feedback", { method: "OPTIONS", headers: { origin: "https://unrelated.example" } }))).status, 403);
+  assert.equal((await route.submit({ lessonSlug: lessonThreeSlug, section: "l3-intro", message: "Вопрос" }, "https://unrelated.example")).status, 403);
+  const failed = await route.submit({ lessonSlug: lessonThreeSlug, section: "l3-intro", message: "Вопрос" });
+  assert.equal(failed.status, 500);
+  assert.doesNotMatch(await failed.text(), /private database failure/);
+});
+
 test("lesson 18 uses the existing protected lesson policy", () => {
   const lesson = lessons.getLessonBySlug("misija-rtanj");
   assert.equal(lesson.number, 18);

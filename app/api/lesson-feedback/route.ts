@@ -2,6 +2,23 @@ import { NextResponse } from "next/server";
 import { getCurrentUser, listApprovedLessonFeedback, saveLessonFeedback } from "@/lib/supabase-server";
 
 const recentSubmissions = new Map<string, number>();
+const lessonThreeSlug = "rod-muzhskoy-zhenskiy-sredniy";
+const lessonThreeSections = new Set(["intro", "comic", "countries", "taxi", "plural", "words", "possessives", "practice", "recap", "homework"].map(id => `l3-${id}`));
+const lessonSiteOrigin = "https://ty-serb-lesson-three.lixi141210.chatgpt.site";
+
+function responseHeaders(request: Request) {
+  const headers: Record<string, string> = { "Cache-Control": "private, no-store", Vary: "Origin" };
+  if (request.headers.get("origin") === lessonSiteOrigin) headers["Access-Control-Allow-Origin"] = lessonSiteOrigin;
+  return headers;
+}
+
+export async function OPTIONS(request: Request) {
+  if (request.headers.get("origin") !== lessonSiteOrigin) return new NextResponse(null, { status: 403 });
+  return new NextResponse(null, { status: 204, headers: {
+    ...responseHeaders(request), "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Max-Age": "600",
+  } });
+}
 
 export async function GET(request: Request) {
   const section = new URL(request.url).searchParams.get("section")?.slice(0, 40) || "";
@@ -11,11 +28,16 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const headers = responseHeaders(request);
+  const origin = request.headers.get("origin");
+  if (origin && origin !== new URL(request.url).origin && origin !== lessonSiteOrigin) {
+    return NextResponse.json({ error: "Недопустимый источник сообщения" }, { status: 403, headers });
+  }
   try {
     const address = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
     const now = Date.now();
     if (now - (recentSubmissions.get(address) ?? 0) < 15_000) {
-      return NextResponse.json({ error: "Подождите немного перед следующим сообщением" }, { status: 429 });
+      return NextResponse.json({ error: "Подождите немного перед следующим сообщением" }, { status: 429, headers });
     }
     const body = await request.json();
     const lessonSlug = String(body.lessonSlug ?? "").slice(0, 100);
@@ -23,16 +45,17 @@ export async function POST(request: Request) {
     const name = String(body.name ?? "").trim().slice(0, 80);
     const message = String(body.message ?? "").trim().slice(0, 1500);
     const kind = body.kind === "introduction" ? "introduction" : "feedback";
-    if (lessonSlug !== "azbuka-i-proiznoshenie" || !section || message.length < 2) {
-      return NextResponse.json({ error: "Некорректное сообщение" }, { status: 400 });
+    if (!["azbuka-i-proiznoshenie", lessonThreeSlug].includes(lessonSlug) || !section || message.length < 2
+      || (lessonSlug === lessonThreeSlug && (!lessonThreeSections.has(section) || kind !== "feedback"))) {
+      return NextResponse.json({ error: "Некорректное сообщение" }, { status: 400, headers });
     }
 
     const user = await getCurrentUser();
     await saveLessonFeedback({ userId: user?.id ?? null, lessonSlug, section, name, message, kind });
     recentSubmissions.set(address, now);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true }, { headers });
   } catch (error) {
     console.error("lesson-feedback save failed", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Не получилось сохранить сообщение" }, { status: 500 });
+    return NextResponse.json({ error: "Не получилось сохранить сообщение. Попробуй ещё раз." }, { status: 500, headers });
   }
 }

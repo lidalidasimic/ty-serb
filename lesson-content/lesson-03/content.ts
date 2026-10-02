@@ -2,7 +2,7 @@ export type Question = { text: string; answers: string[]; choices?: string[][] }
 export const sections = [
   ["intro", "Вступление"], ["comic", "Комикс"], ["countries", "Национальности"],
   ["taxi", "В такси"], ["plural", "Множина"], ["words", "Новые слова"],
-  ["possessives", "Чей?"], ["practice", "Диалоги"], ["homework", "Домашнее задание"], ["recap", "Итоги"],
+  ["possessives", "Чей?"], ["practice", "Диалоги"], ["recap", "Завершение урока"], ["homework", "Домашнее задание"],
 ] as const;
 export const tracks: Record<string, string> = {
   "00-intro": "Вступление Лидии", "01-comic": "Чтение комикса", "02-comic-translation": "Перевод комикса",
