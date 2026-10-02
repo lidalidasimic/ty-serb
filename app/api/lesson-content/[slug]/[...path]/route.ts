@@ -17,6 +17,7 @@ const mimeTypes: Record<string, string> = {
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".png": "image/png",
+  ".jpg": "image/jpeg",
   ".mp3": "audio/mpeg",
   ".wav": "audio/wav",
   ".ogg": "audio/ogg",
@@ -24,12 +25,31 @@ const mimeTypes: Record<string, string> = {
   ".webm": "audio/webm",
 };
 
+const lessonTwoAudio = new Set([
+  "lesson-02-01-intro.m4a", "lesson-02-02-passport.m4a", "lesson-02-03-professions.m4a",
+  "lesson-02-04-comic.m4a", "lesson-02-05-new-words.m4a", "lesson-02-06-translation.m4a",
+  "lesson-02-07-why-biti.m4a", "lesson-02-08-biti-forms.m4a", "lesson-02-09-ovo-to-ono.m4a",
+]);
+
+function isAllowedFile(lessonNumber: number, file: string) {
+  if (lessonNumber === 2) {
+    return ["index.html", "styles.css", "lesson.js"].includes(file)
+      || /^images\/lesson-02-comic-0[1-7]\.jpg$/.test(file)
+      || /^images\/lesson-02-professions-0[12]\.png$/.test(file)
+      || /^images\/lesson-02-demonstrative-(?:ovo|to)\.png$/.test(file)
+      || (file.startsWith("audio/") && lessonTwoAudio.has(file.slice(6)));
+  }
+  return ["index.html", "styles.css", "lesson.js", "assets/lucide.min.js"].includes(file)
+    || /^assets\/slide-(?:[1-9]|26|29)-1\.png$/.test(file)
+    || /^audio\/section-0[1-9]\.(?:mp3|wav|ogg|m4a|webm)$/.test(file);
+}
+
 export async function GET(request: NextRequest, { params }: ContentRouteProps) {
   const { slug, path: parts } = await params;
   const lesson = getLessonBySlug(slug);
   const privateHeaders = { "Cache-Control": "private, no-store" };
 
-  if (!lesson || lesson.number !== 18) {
+  if (!lesson || (lesson.number !== 2 && lesson.number !== 18)) {
     return NextResponse.json({ error: "Материал не найден" }, { status: 404, headers: privateHeaders });
   }
 
@@ -42,16 +62,14 @@ export async function GET(request: NextRequest, { params }: ContentRouteProps) {
   }
 
   const file = parts.join("/");
-  const allowed = ["index.html", "styles.css", "lesson.js", "assets/lucide.min.js"].includes(file)
-    || /^assets\/slide-(?:[1-9]|26|29)-1\.png$/.test(file)
-    || /^audio\/section-0[1-9]\.(?:mp3|wav|ogg|m4a|webm)$/.test(file);
-  if (!allowed) {
+  if (!isAllowedFile(lesson.number, file)) {
     return NextResponse.json({ error: "Материал не найден" }, { status: 404, headers: privateHeaders });
   }
 
   let content: Buffer;
   try {
-    content = await readFile(path.join(process.cwd(), "lesson-content", "lesson-18", file));
+    const folder = lesson.number === 2 ? "lesson-02" : "lesson-18";
+    content = await readFile(path.join(process.cwd(), "lesson-content", folder, file));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     return NextResponse.json({ error: "Материал пока не добавлен" }, { status: 404, headers: privateHeaders });

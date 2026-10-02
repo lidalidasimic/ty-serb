@@ -13,6 +13,7 @@ import { getLessonBySlug, lessons } from "@/data/lessons";
 import { canOpenLesson } from "@/lib/access-control";
 import { getCurrentUser, logActivity } from "@/lib/supabase-server";
 import LessonOneGammaExperience from "@/components/LessonOneGammaExperience";
+import LessonTwoExperience from "@/components/LessonTwoExperience";
 import LessonSeventeenExperience from "@/components/LessonSeventeenExperience";
 import LessonEighteenExperience from "@/components/LessonEighteenExperience";
 
@@ -203,6 +204,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
           </div>
         </div>
       </section>
+      {lesson.number === 2 ? <LessonTwoExperience /> : null}
       {lesson.number === 1 ? (
         <>
           <section className="bg-[#f8f1e7] px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
