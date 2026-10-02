@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "npm run build:lesson-two",
+    "prebuild": "node scripts/build-lessons.mjs",
     "build:lesson-two": "node scripts/build-lesson-two.mjs",
     "build": "next build",
     "start": "next start",

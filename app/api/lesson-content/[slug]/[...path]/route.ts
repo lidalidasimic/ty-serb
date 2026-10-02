@@ -31,7 +31,18 @@ const lessonTwoAudio = new Set([
   "lesson-02-07-why-biti.m4a", "lesson-02-08-biti-forms.m4a", "lesson-02-09-ovo-to-ono.m4a",
 ]);
 
+const lessonThreeAudio = new Set([
+  "00-intro.m4a", "01-comic.m4a", "02-comic-translation.m4a", "03-countries-instruction.m4a",
+  "04-more-countries.m4a", "05-usage.m4a", "06-nationalities-instruction.m4a", "07-plural-intro.m4a",
+  "08-taxi-dialogue.m4a", "09-taxi-translation.m4a", "10-plural-explanation.m4a", "11-masculine.m4a",
+  "12-feminine.m4a", "13-neuter.m4a", "14-plural-practice.m4a", "15-possessive-singular.m4a", "16-possessive-plural.m4a",
+]);
+
 function isAllowedFile(lessonNumber: number, file: string) {
+  if (lessonNumber === 3) {
+    return ["index.html", "styles.css", "lesson.js", "comic.png"].includes(file)
+      || (file.startsWith("audio/") && lessonThreeAudio.has(file.slice(6)));
+  }
   if (lessonNumber === 2) {
     return ["index.html", "styles.css", "lesson.js"].includes(file)
       || /^images\/lesson-02-comic-0[1-7]\.jpg$/.test(file)
@@ -49,7 +60,7 @@ export async function GET(request: NextRequest, { params }: ContentRouteProps) {
   const lesson = getLessonBySlug(slug);
   const privateHeaders = { "Cache-Control": "private, no-store" };
 
-  if (!lesson || (lesson.number !== 2 && lesson.number !== 18)) {
+  if (!lesson || ![2, 3, 18].includes(lesson.number)) {
     return NextResponse.json({ error: "Материал не найден" }, { status: 404, headers: privateHeaders });
   }
 
@@ -68,7 +79,7 @@ export async function GET(request: NextRequest, { params }: ContentRouteProps) {
 
   let content: Buffer;
   try {
-    const folder = lesson.number === 2 ? "lesson-02" : "lesson-18";
+    const folder = `lesson-${String(lesson.number).padStart(2, "0")}`;
     content = await readFile(path.join(process.cwd(), "lesson-content", folder, file));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;

@@ -1,0 +1,89 @@
+[
+  {
+    "id": "00-intro",
+    "original": "l3 uvod do 35 sekunde.m4a",
+    "file": "00-intro.m4a",
+    "trimSeconds": 35
+  },
+  {
+    "id": "01-comic",
+    "original": "l3.1 strip citanje.m4a",
+    "file": "01-comic.m4a"
+  },
+  {
+    "id": "02-comic-translation",
+    "original": "l3.1.2 prevod stripa.m4a",
+    "file": "02-comic-translation.m4a"
+  },
+  {
+    "id": "03-countries-instruction",
+    "original": "l3.2 instrukcija vezbe.m4a",
+    "file": "03-countries-instruction.m4a"
+  },
+  {
+    "id": "04-more-countries",
+    "original": "l3.3 još država.m4a",
+    "file": "04-more-countries.m4a"
+  },
+  {
+    "id": "05-usage",
+    "original": "l3.4 kako koristiti.m4a",
+    "file": "05-usage.m4a"
+  },
+  {
+    "id": "06-nationalities-instruction",
+    "original": "l3.5 instrukcija vezbe nacionalnost.m4a",
+    "file": "06-nationalities-instruction.m4a"
+  },
+  {
+    "id": "07-plural-intro",
+    "original": "l3.6 novi deo - množina imenica.m4a",
+    "file": "07-plural-intro.m4a"
+  },
+  {
+    "id": "08-taxi-dialogue",
+    "original": "l3.7 novi dijalog.m4a",
+    "file": "08-taxi-dialogue.m4a"
+  },
+  {
+    "id": "09-taxi-translation",
+    "original": "l3.7 prevod mačkoslav i jasmina.m4a",
+    "file": "09-taxi-translation.m4a"
+  },
+  {
+    "id": "10-plural-explanation",
+    "original": "l3.8 objašnjenje.m4a",
+    "file": "10-plural-explanation.m4a"
+  },
+  {
+    "id": "11-masculine",
+    "original": "l3.9 muški rod do 3 i 20.m4a",
+    "file": "11-masculine.m4a",
+    "trimSeconds": 200
+  },
+  {
+    "id": "12-feminine",
+    "original": "l3.10 ženski rod.m4a",
+    "file": "12-feminine.m4a"
+  },
+  {
+    "id": "13-neuter",
+    "original": "l3.11 srednjirod.m4a",
+    "file": "13-neuter.m4a"
+  },
+  {
+    "id": "14-plural-practice",
+    "original": "l3.12 objašnjenje vežbi.m4a",
+    "file": "14-plural-practice.m4a"
+  },
+  {
+    "id": "15-possessive-singular",
+    "original": "l3.13 prisvojne zamenice jednina.m4a",
+    "file": "15-possessive-singular.m4a"
+  },
+  {
+    "id": "16-possessive-plural",
+    "original": "l3.14 prisvojne zamenice množina.m4a",
+    "file": "16-possessive-plural.m4a"
+  }
+]

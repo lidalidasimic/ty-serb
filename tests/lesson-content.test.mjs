@@ -51,6 +51,89 @@ function createRoute(user, missing = false, slug = "misija-rtanj") {
   ) };
 }
 
+const lessonThreeSlug = "rod-muzhskoy-zhenskiy-sredniy";
+const lessonThreeFiles = [
+  "index.html", "styles.css", "lesson.js", "comic.png",
+  ...["00-intro", "01-comic", "02-comic-translation", "03-countries-instruction",
+    "04-more-countries", "05-usage", "06-nationalities-instruction", "07-plural-intro",
+    "08-taxi-dialogue", "09-taxi-translation", "10-plural-explanation", "11-masculine",
+    "12-feminine", "13-neuter", "14-plural-practice", "15-possessive-singular",
+    "16-possessive-plural"].map(id => `audio/${id}.m4a`),
+];
+
+test("all lesson 3 files require approved access before any filesystem read", async () => {
+  for (const user of [null, ...["pending", "rejected", "revoked"].map(accessStatus => ({ accessStatus }))]) {
+    const route = createRoute(user, false, lessonThreeSlug);
+    for (const file of lessonThreeFiles) {
+      const response = await route.get(file.split("/"));
+      assert.equal(response.status, user ? 403 : 401);
+      assert.equal(response.headers.get("cache-control"), "private, no-store");
+    }
+    assert.equal(route.calls.reads, 0);
+  }
+});
+
+test("approved students receive every lesson 3 asset from its private folder", async () => {
+  const route = createRoute({ accessStatus: "approved" }, false, lessonThreeSlug);
+  for (const file of lessonThreeFiles) {
+    assert.ok(readFileSync(new URL(`lesson-content/lesson-03/${file}`, root)).length);
+    const response = await route.get(file.split("/"));
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("cache-control"), "private, no-store");
+    assert.equal(response.headers.get("content-security-policy"), "frame-ancestors 'self'");
+    assert.match(route.calls.paths.at(-1), /lesson-content[/\\]lesson-03[/\\]/);
+    if (file.endsWith(".m4a")) assert.equal(response.headers.get("content-type"), "audio/mp4");
+    if (file.endsWith(".png")) assert.equal(response.headers.get("content-type"), "image/png");
+  }
+});
+
+test("lesson 3 rejects source, manifests, unknown files and traversal", async () => {
+  const route = createRoute({ accessStatus: "approved" }, false, lessonThreeSlug);
+  for (const file of ["Lesson.tsx", "transcripts.ts", "audio/manifest.json", "entry.tsx",
+    "../lesson-02/index.html", "audio/../index.html", "audio/00-intro.mp3",
+    "audio/section-01.mp3", "audio/missing.m4a", "images/lesson-02-comic-01.jpg"]) {
+    assert.equal((await route.get(file.split("/"))).status, 404);
+  }
+  assert.equal(route.calls.reads, 0);
+});
+
+test("lesson 3 audio supports seeking, invalid ranges and missing files", async () => {
+  const route = createRoute({ accessStatus: "approved" }, false, lessonThreeSlug);
+  const parts = ["audio", "11-masculine.m4a"];
+  const response = await route.get(parts, "bytes=2-4");
+  assert.equal(response.status, 206);
+  assert.equal(await response.text(), "234");
+  assert.equal(response.headers.get("content-range"), "bytes 2-4/10");
+  assert.equal((await route.get(parts, "bytes=100-")).status, 416);
+  assert.equal((await createRoute({ accessStatus: "approved" }, true, lessonThreeSlug).get(parts)).status, 404);
+});
+
+test("lesson 3 appears below existing materials only for approved students", async () => {
+  for (const user of [null, { id: "student", accessStatus: "pending" }, { id: "student", accessStatus: "approved" }]) {
+    const page = loadModule("app/lessons/[slug]/page.tsx", {
+      "next/link": ({ children, ...props }) => React.createElement("a", props, children),
+      "next/navigation": { notFound: () => { throw new Error("Not found"); } },
+      "@/data/lessons": lessons,
+      "@/lib/access-control": access,
+      "@/lib/supabase-server": { getCurrentUser: async () => user, logActivity: async () => {} },
+      "@/components/LessonOneGammaExperience": () => null,
+      "@/components/LessonTwoExperience": () => null,
+      "@/components/LessonThreeExperience": loadModule("components/LessonThreeExperience.tsx").default,
+      "@/components/LessonSeventeenExperience": () => null,
+      "@/components/LessonEighteenExperience": () => null,
+    });
+    const html = renderToStaticMarkup(await page.default({ params: Promise.resolve({ slug: lessonThreeSlug }) }));
+    const frame = html.indexOf(`src="/api/lesson-content/${lessonThreeSlug}/index.html"`);
+    if (user?.accessStatus === "approved") {
+      assert.ok(frame > html.indexOf("Открыть презентацию"));
+      assert.ok(frame > html.indexOf("Telegram-пост"));
+    } else {
+      assert.equal(frame, -1);
+      assert.match(html, /Доступ к материалам ожидает подтверждения/);
+    }
+  }
+});
+
 test("lesson 18 uses the existing protected lesson policy", () => {
   const lesson = lessons.getLessonBySlug("misija-rtanj");
   assert.equal(lesson.number, 18);
@@ -131,6 +214,7 @@ test("lesson 2 appears below the existing material card only for authorized stud
       "@/lib/supabase-server": { getCurrentUser: async () => user, logActivity: async () => {} },
       "@/components/LessonOneGammaExperience": () => null,
       "@/components/LessonTwoExperience": loadModule("components/LessonTwoExperience.tsx").default,
+      "@/components/LessonThreeExperience": loadModule("components/LessonThreeExperience.tsx").default,
       "@/components/LessonSeventeenExperience": () => null,
       "@/components/LessonEighteenExperience": () => null,
     });
