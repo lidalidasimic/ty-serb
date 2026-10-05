@@ -41,7 +41,7 @@ function Audio({ track }: { track: keyof typeof audioTracks }) {
   const [speed, setSpeed] = useState("1");
   const [error, setError] = useState(false);
   const { number, file, name } = audioTracks[track];
-  const src = "/api/lesson-content/kak-predstavitsya/audio/" + file;
+  const src = "/api/lesson-content/kak-predstavitsya/audio/" + file + "?v=balanced-stereo";
   return <div className="audio">
     <p className="audio-title"><span>{number}</span><b>{name}</b></p>
     <audio ref={ref} controls data-lesson-audio preload="none" aria-label={name}

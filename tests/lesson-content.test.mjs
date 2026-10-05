@@ -297,6 +297,7 @@ test("lesson 2 initially exposes one section and keeps all media protected", () 
   assert.equal(sections.filter(section => !/\bhidden=/.test(section)).length, 1);
   assert.match(sections.find(section => !/\bhidden=/.test(section)), /id="intro"/);
   assert.equal((html.match(/data-lesson-audio=/g) || []).length, 9);
+  assert.equal((html.match(/\.m4a\?v=balanced-stereo/g) || []).length, 9);
   assert.match(html, /Переход между разделами/);
   assert.doesNotMatch(html, /(?:src|href)="\/lesson-02\//);
 });
