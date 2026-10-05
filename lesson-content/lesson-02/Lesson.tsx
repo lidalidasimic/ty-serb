@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 const storageKey = "tyserb-lesson-02";
 const sections = [
@@ -41,7 +41,7 @@ function Audio({ track }: { track: keyof typeof audioTracks }) {
   const [speed, setSpeed] = useState("1");
   const [error, setError] = useState(false);
   const { number, file, name } = audioTracks[track];
-  const src = "./audio/" + file;
+  const src = "/api/lesson-content/kak-predstavitsya/audio/" + file;
   return <div className="audio">
     <p className="audio-title"><span>{number}</span><b>{name}</b></p>
     <audio ref={ref} controls data-lesson-audio preload="none" aria-label={name}
@@ -94,8 +94,9 @@ function Quiz() {
 }
 
 export default function Lesson() {
-  const [progress, setProgress] = useState(0);
   const [active, setActive] = useState(0);
+  const rootRef = useRef<HTMLElement>(null);
+  const scrollRequested = useRef(false);
   const [done, setDone] = useState(false);
   const [checks, setChecks] = useState<boolean[]>([]);
   useEffect(() => {
@@ -111,62 +112,74 @@ export default function Lesson() {
   }, []);
   useEffect(() => {
     const update = () => {
-      const height = document.documentElement.scrollHeight - innerHeight;
-      setProgress(height > 0 ? Math.min(100, Math.max(0, Math.round(scrollY / height * 100))) : 0);
-      let current = 0;
-      sections.forEach(([id], i) => { if ((document.getElementById(id)?.getBoundingClientRect().top ?? Infinity) <= 170) current = i; });
-      setActive(current);
+      const index = sections.findIndex(([id]) => "#" + id === location.hash);
+      scrollRequested.current = index >= 0;
+      setActive(index < 0 ? 0 : index);
+      rootRef.current?.querySelectorAll("audio").forEach(audio => audio.pause());
     };
-    addEventListener("scroll", update, { passive: true });
-    addEventListener("resize", update);
+    addEventListener("hashchange", update);
+    addEventListener("popstate", update);
     update();
-    return () => { removeEventListener("scroll", update); removeEventListener("resize", update); };
+    return () => { removeEventListener("hashchange", update); removeEventListener("popstate", update); };
   }, []);
+  useLayoutEffect(() => {
+    if (!scrollRequested.current) return;
+    rootRef.current?.scrollIntoView({ block: "start", behavior: "instant" });
+    scrollRequested.current = false;
+  }, [active]);
+  const openSection = (index: number) => {
+    if (index < 0 || index >= sections.length) return;
+    rootRef.current?.querySelectorAll("audio").forEach(audio => audio.pause());
+    scrollRequested.current = true;
+    setActive(index);
+    if (location.hash !== "#" + sections[index][0]) history.pushState(null, "", "#" + sections[index][0]);
+    if (index === active) rootRef.current?.scrollIntoView({ block: "start", behavior: "instant" });
+  };
   const persist = (nextDone: boolean, nextChecks: boolean[]) => {
     try { localStorage.setItem(storageKey, JSON.stringify({ done: nextDone, checks: nextChecks })); } catch { /* Browser storage is optional. */ }
   };
-  return <main>
-    <div className="progress" aria-hidden="true"><i style={{ width: progress + "%" }} /></div>
+  return <main ref={rootRef} className="lesson-two-content">
+    <div className="progress" aria-hidden="true"><i style={{ width: (active + 1) / sections.length * 100 + "%" }} /></div>
     <div className="wrap">
       <nav className="lesson-navigation" aria-label="Разделы урока">
-        <div className="brandbar"><a href="#intro">TY SERB</a><b>Урок 2</b><span>{active + 1}/{sections.length}</span></div>
-        <div className="lesson-rail">{sections.map(([id, name], i) => <a key={id} href={"#" + id} title={(i + 1) + ". " + name} aria-label={"Раздел " + (i + 1) + ": " + name} aria-current={active === i ? "location" : undefined} className={active === i ? "active" : i < active ? "visited" : ""}>{String(i + 1).padStart(2, "0")}</a>)}</div>
+        <div className="brandbar"><a href="#intro" onClick={event => { event.preventDefault(); openSection(0); }}>TY SERB</a><b>Урок 2</b><span>{active + 1}/{sections.length}</span></div>
+        <div className="lesson-rail">{sections.map(([id, name], i) => <a key={id} href={"#" + id} title={(i + 1) + ". " + name} aria-label={"Раздел " + (i + 1) + ": " + name} aria-current={active === i ? "location" : undefined} onClick={event => { if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return; event.preventDefault(); openSection(i); }} className={active === i ? "active" : i < active ? "visited" : ""}>{String(i + 1).padStart(2, "0")}</a>)}</div>
         <p className="rail-caption">{sections[active][1]}</p>
       </nav>
-      <header id="intro">
+      <header id="intro" data-lesson-section hidden={active !== 0}>
         <div className="eyebrow">Учимо српски са Лидијом Симић! · A1</div>
         <h1>Професије.<br /><em>Глагол biti.</em></h1>
         <p className="lead">Говоримо ко смо и чиме се бавимо. Учимо облике <b>сам, си, је, смо, сте, су</b>.</p>
         <Audio track="intro" />
       </header>
 
-      <section id="reading">
+      <section id="reading" data-lesson-section hidden={active !== 1}>
         <div className="no">01 · УВОДНО ЧИТАЊЕ</div><h2>На пасошкој контроли</h2>
         <Audio track="reading" />
         <div className="cols"><article><h3>Пасошка контрола</h3><p>— Добро јутро!<br />— Добро јутро! Ваш пасош, молим.<br />— Изволите.<br />— Ви сте господин Бонд?<br />— Да, ја сам Стив Бонд.<br />— Ви сте туриста?<br />— Не, ја сам бизнисмен.<br />— Ваша адреса у Београду?<br />— Хотел „Метропол“.<br />— Изволите пасош.<br />— Хвала.</p></article><article><h3>Сусрет <small>· встреча</small></h3><p>— Извините, да ли сте ви господин Бонд?<br />— Да, ја сам Стив Бонд.<br />— Ја сам Љиљана Јовановић.<br />— Драго ми је.<br />— Ви сте Енглез?<br />— Да, ја сам Енглез.<br />— Добро говорите српски!<br />— Хвала.</p></article></div>
       </section>
-      <section id="vocabulary">
+      <section id="vocabulary" data-lesson-section hidden={active !== 2}>
         <div className="no">02 · НОВИ ВОКАБУЛАР</div><h2>Данас учимо о професијама!</h2>
         <p className="lead">Danas učimo o profesijama! Обрати пажњу како се граде називи у женском роду.</p>
         <Audio track="professions" />
         <ol className="profs">{profs.map(x => <li key={x}>{x}</li>)}</ol>
-        <div className="images"><img loading="lazy" src="./images/lesson-02-professions-01.png" alt="Професије, први део" /><img loading="lazy" src="./images/lesson-02-professions-02.png" alt="Професије, други део" /></div>
+        <div className="images"><img loading="lazy" src="/api/lesson-content/kak-predstavitsya/images/lesson-02-professions-01.png" alt="Професије, први део" /><img loading="lazy" src="/api/lesson-content/kak-predstavitsya/images/lesson-02-professions-02.png" alt="Професије, други део" /></div>
         <aside><b>Погодите шта значе речи:</b><p>таксиста, адвокат, дипломата, пилот, пекар, судија, контролор, директор, фотограф, возач, чувар, рачуновођа, музичар, астронаут, инфлуенсер?</p></aside>
         <LearningApp id="pczrn0skn26" title="Професије" description="Повежи назив професије са руским преводом." />
       </section>
-      <section id="comic">
+      <section id="comic" data-lesson-section hidden={active !== 3}>
         <div className="no">03 · СТРИП</div><h2>Ana, konj u velikom gradu!</h2>
         <Audio track="comic" />
         <div className="comic">{comicLines.map((line, i) => <figure key={line}>
-          <a href={"./images/lesson-02-comic-0" + (i + 1) + ".jpg"} target="_blank" rel="noreferrer" aria-label={"Открыть кадр " + (i + 1) + " в полном размере"} style={{ aspectRatio: (comicBounds[i][1] - comicBounds[i][0]) + " / 1080" }}>
-            <img loading="lazy" width="1920" height="1080" style={{ width: (1920 / (comicBounds[i][1] - comicBounds[i][0]) * 100) + "%", marginLeft: (-comicBounds[i][0] / (comicBounds[i][1] - comicBounds[i][0]) * 100) + "%" }} src={"./images/lesson-02-comic-0" + (i + 1) + ".jpg"} alt={line} />
+          <a href={"/api/lesson-content/kak-predstavitsya/images/lesson-02-comic-0" + (i + 1) + ".jpg"} target="_blank" rel="noreferrer" aria-label={"Открыть кадр " + (i + 1) + " в полном размере"} style={{ aspectRatio: (comicBounds[i][1] - comicBounds[i][0]) + " / 1080" }}>
+            <img loading="lazy" width="1920" height="1080" style={{ width: (1920 / (comicBounds[i][1] - comicBounds[i][0]) * 100) + "%", marginLeft: (-comicBounds[i][0] / (comicBounds[i][1] - comicBounds[i][0]) * 100) + "%" }} src={"/api/lesson-content/kak-predstavitsya/images/lesson-02-comic-0" + (i + 1) + ".jpg"} alt={line} />
           </a><figcaption><span>Кадр {i + 1} / 7</span><p lang="sr-Latn">{line}</p></figcaption>
         </figure>)}</div>
         <h3 className="sub">Nepoznate reči · Незнакомые слова</h3><Audio track="words" />
         <dl className="word-list">{comicWords.map(([word, translation]) => <div key={word}><dt lang="sr-Latn">{word}</dt><dd>{translation}</dd></div>)}</dl>
         <h3 className="sub">Prevod · Перевод</h3><Audio track="translation" />
       </section>
-      <section id="grammar">
+      <section id="grammar" data-lesson-section hidden={active !== 4}>
         <div className="no">04 · ГРАМАТИКА</div><h2>Глагол JESAM (biti)</h2>
         <Audio track="whyBiti" />
         <p className="lead">У српском језику глагол <b>БИТИ</b> („быть”) је обавезан! Без њега нема ни садашњег ни прошлог времена. Ово је једна од кључних разлика између српског и руског.</p>
@@ -176,34 +189,35 @@ export default function Lesson() {
         <div className="forms">{forms.map(x => <div key={x[0]}><span>{x[0]}</span><b>{x[1]}</b><small>{x[2]}</small></div>)}</div>
         <p className="remember">Ја сам Лидија. Он је Марко. Ми смо из Србије. Ви сте из Русије.</p>
       </section>
-      <section id="comparison">
+      <section id="comparison" data-lesson-section hidden={active !== 5}>
         <div className="no">05 · ПОРЕЂЕЊЕ</div><h2>Упоредимо српски и руски</h2>
         <div className="compare"><article><h3>Руски</h3><p>Я студент<br />Она дома<br />Мы умнейшие</p></article><article><h3>Српски</h3><p>Ја <mark>САМ</mark> студент<br />Она <mark>ЈЕ</mark> код куће<br />Ми <mark>СМО</mark> најпаметнији</p></article></div>
         <h3 className="sub">BITI + показне заменице</h3><Audio track="demonstratives" />
         <div className="formula"><b>Показна заменица + БИТИ + именица</b><p>Ово <mark>ЈЕ</mark> кућа. <small>— This is a house.</small><br />То <mark>ЈЕ</mark> мој брат. <small>— That is my brother.</small><br />Оно <mark>СУ</mark> деца. <small>— Those are children.</small></p></div>
-        <div className="images"><img loading="lazy" src="./images/lesson-02-demonstrative-ovo.png" alt="ОВО, ТО, ОНО: близко, дальше, далеко" /><img loading="lazy" src="./images/lesson-02-demonstrative-to.png" alt="ОВО: мой простор, ТО: наш простор, ОНО: далеко" /></div>
+        <div className="images"><img loading="lazy" src="/api/lesson-content/kak-predstavitsya/images/lesson-02-demonstrative-ovo.png" alt="ОВО, ТО, ОНО: близко, дальше, далеко" /><img loading="lazy" src="/api/lesson-content/kak-predstavitsya/images/lesson-02-demonstrative-to.png" alt="ОВО: мой простор, ТО: наш простор, ОНО: далеко" /></div>
       </section>
-      <section id="practice">
+      <section id="practice" data-lesson-section hidden={active !== 6}>
         <div className="no">06 · ВЕЖБА</div><h2>Провери глагол biti</h2><Quiz />
         <LearningApp id="pdmogn67t26" title="Глагол TO BE на српском" description="Употреби глагол бити у правилном облику." />
       </section>
-      <section id="phrases">
+      <section id="phrases" data-lesson-section hidden={active !== 7}>
         <div className="no">07 · БИЋЕ ТИ КОРИСНО</div><h2>Фразе за час</h2>
         <div className="phrases"><article><h3>Извините…</h3><p>Извините, шта значи ова реч? <small>— слово</small><br />Шта ово значи? <small>— что это значит?</small><br />Како се пише…? Како се чита…?</p></article><article><h3>Објашњења</h3><p>Је л’ можете да поновите? <small>— повторить</small><br />Молим Вас, поновите, нисам разумео/разумела.<br />Не разумем…</p></article><article><h3>Како да кажем</h3><p>Нисам сигуран/сигурна. <small>— Я не уверен/а.</small><br />Професоре/Професорка…<br />Могу ли да Вас нешто питам?</p></article><article><h3>Је л’ говорите српски?</h3><p>Да, (по)мало. / Говорим (по)мало. / Причам (по)мало.<br />Разумем помало. / Знам нешто.</p></article></div>
       </section>
-      <section id="homework">
+      <section id="homework" data-lesson-section hidden={active !== 8}>
         <div className="no">08 · ДОМАЋИ ЗАДАТАК</div><h2>Вежбе за код куће</h2>
         <LearningApp id="pvoby9i1k26" title="1. Нове речи" description="Понови и утврди нови вокабулар из лекције." />
         <LearningApp id="p6pbz143t26" title="2. Упиши глагол бити" description="Упиши ЈЕСАМ / БИТИ у правилном облику." />
         <article className="paper"><h3>Упражнение 1</h3><p>— Добар дан!<br />— ____________ Како се зовеш?<br />— Ја сам Милица. А ти?<br />— Ја сам Маја. Ја сам из Ниша. Одакле си ти?<br />— Ја сам из Суботице.<br />— Драго ми је.<br />— ______________________________.</p><h3>Упражнение 2</h3><p>Вставьте глагол бити: Ја ___ лекарка. Ти ___ учитељица. Он ___ бизнисмен. Она ___ програмерка. Ми ___ менаџери. Ви ___ политичари. Они ___ зубари. Оне ___ фризерке. Драган ___ ветеринар, Јелена ___ новинар. Џон ___ лекар.</p><h3>Упражнение 3</h3><p><b>а)</b> Ви ___ програмер? — Не, ја ___ менаџер. Програмер ___ у следећем кабинету. Ја ___ Мила, ваш нови правник. Драго ми ___. Ја ___ Стефан.<br /><br /><b>б)</b> Ја ___ ваша нова учитељица Ана. Ја ___ Милан. Ја ___ Љубица. Драго ми ___. Ви ___ из Београда? Да, ми ___ из Београда. Наши родитељи ___ из Русије, они ___ из Москве.</p></article>
       </section>
-      <section id="recap">
+      <section id="recap" data-lesson-section hidden={active !== 9}>
         <div className="no">09 · ЗАВРШЕТАК</div><h2>Шта сада умем?</h2>
         <div className="checklist">{["Кажем своју професију.", "Препознајем мушки и женски род професија.", "Знам: сам, си, је, смо, сте, су.", "Питам: Је л’ говорите српски?", "Користим фразе за час."].map((x, i) => <label key={x}><input type="checkbox" checked={Boolean(checks[i])} onChange={event => {
           const next = [...checks]; next[i] = event.target.checked; setChecks(next); persist(done, next);
         }} />{x}</label>)}</div>
         <button className="finish" onClick={() => { setDone(true); persist(true, checks); }}>{done ? "Лекција је завршена ✓" : "Завершить урок"}</button>
       </section>
+      <nav className="section-controls" aria-label="Переход между разделами"><button disabled={active === 0} onClick={() => openSection(active - 1)}>Назад</button><span>{active + 1} / {sections.length}</span><button disabled={active === sections.length - 1} onClick={() => openSection(active + 1)}>Далее</button></nav>
       <footer><b>TY SERB</b><span>Лекција 02 · Лидија Симић</span></footer>
     </div>
   </main>;

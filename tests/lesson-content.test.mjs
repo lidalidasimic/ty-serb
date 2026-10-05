@@ -198,7 +198,7 @@ test("lesson 18 uses the existing protected lesson policy", () => {
 });
 
 const lessonTwoFiles = [
-  "index.html", "styles.css", "lesson.js",
+  "index.html", "styles.css", "embedded.css", "lesson.js",
   ...Array.from({ length: 7 }, (_, i) => `images/lesson-02-comic-0${i + 1}.jpg`),
   "images/lesson-02-professions-01.png", "images/lesson-02-professions-02.png",
   "images/lesson-02-demonstrative-ovo.png", "images/lesson-02-demonstrative-to.png",
@@ -270,16 +270,35 @@ test("lesson 2 appears below the existing material card only for authorized stud
       "@/components/LessonEighteenExperience": () => null,
     });
     const html = renderToStaticMarkup(await page.default({ params: Promise.resolve({ slug: "kak-predstavitsya" }) }));
-    const frame = html.indexOf('src="/api/lesson-content/kak-predstavitsya/index.html"');
+    const lessonContent = html.indexOf("data-lesson-two=");
     if (user) {
-      assert.ok(frame > html.indexOf("Открыть презентацию"));
-      assert.ok(frame > html.indexOf("Telegram-пост"));
+      assert.ok(lessonContent > html.indexOf("Открыть презентацию"));
+      assert.ok(lessonContent > html.indexOf("Telegram-пост"));
+      assert.doesNotMatch(html, /<iframe/);
       assert.match(html, /href="\/api\/materials\/kak-predstavitsya\/telegram"/);
     } else {
-      assert.equal(frame, -1);
+      assert.equal(lessonContent, -1);
       assert.match(html, /Доступ к материалам ожидает подтверждения/);
     }
   }
+});
+
+test("lesson 2 styles cannot change the surrounding course page", async () => {
+  const { default: postcss } = await import("postcss");
+  const stylesheet = postcss.parse(readFileSync(new URL("lesson-content/lesson-02/embedded.css", root), "utf8"));
+  stylesheet.walkRules(rule => assert.ok(rule.selectors.every(selector => selector.startsWith("[data-lesson-two]"))));
+});
+
+test("lesson 2 initially exposes one section and keeps all media protected", () => {
+  const Lesson = loadModule("lesson-content/lesson-02/Lesson.tsx").default;
+  const html = renderToStaticMarkup(React.createElement(Lesson));
+  const sections = html.match(/<(?:header|section)\b[^>]*data-lesson-section[^>]*>/g);
+  assert.equal(sections.length, 10);
+  assert.equal(sections.filter(section => !/\bhidden=/.test(section)).length, 1);
+  assert.match(sections.find(section => !/\bhidden=/.test(section)), /id="intro"/);
+  assert.equal((html.match(/data-lesson-audio=/g) || []).length, 9);
+  assert.match(html, /Переход между разделами/);
+  assert.doesNotMatch(html, /(?:src|href)="\/lesson-02\//);
 });
 
 test("lesson 2 Telegram and presentation buttons retain protected redirects", async () => {

@@ -44,7 +44,7 @@ function isAllowedFile(lessonNumber: number, file: string) {
       || (file.startsWith("audio/") && lessonThreeAudio.has(file.slice(6)));
   }
   if (lessonNumber === 2) {
-    return ["index.html", "styles.css", "lesson.js"].includes(file)
+    return ["index.html", "styles.css", "embedded.css", "lesson.js"].includes(file)
       || /^images\/lesson-02-comic-0[1-7]\.jpg$/.test(file)
       || /^images\/lesson-02-professions-0[12]\.png$/.test(file)
       || /^images\/lesson-02-demonstrative-(?:ovo|to)\.png$/.test(file)

@@ -15,9 +15,11 @@ h2 { font-size: 30px; margin: 10px 0 24px; }
 h3 { font-size: 22px; margin: 0 0 12px; }
 h3 small { font-size: 15px; font-weight: 400; color: var(--mut); }
 .wrap { width: 100%; max-width: 800px; margin: auto; padding: 0 24px; }
-.progress { position: fixed; z-index: 99; inset: 0 0 auto; height: 4px; background: #e4e8ec; }
+.lesson-two-content { scroll-margin-top: var(--lesson-top, 0px); }
+[data-lesson-section][hidden] { display: none !important; }
+.progress { position: sticky; z-index: 41; top: var(--lesson-top, 0px); height: 4px; background: #e4e8ec; }
 .progress i { display: block; height: 100%; background: var(--r); }
-.lesson-navigation { position: sticky; top: 4px; z-index: 80; background: var(--bg); padding: 16px 0 8px; border-bottom: 2px solid var(--ink); }
+.lesson-navigation { position: sticky; top: calc(var(--lesson-top, 0px) + 4px); z-index: 40; background: var(--bg); padding: 16px 0 8px; border-bottom: 2px solid var(--ink); }
 .brandbar { display: flex; align-items: center; gap: 18px; height: 28px; font-size: 14px; font-weight: 900; }
 .brandbar a { margin-right: auto; color: var(--r); font-size: 20px; text-decoration: none; }
 .lesson-rail { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 5px; margin-top: 12px; }
@@ -96,6 +98,11 @@ mark { padding: 2px 4px; border-radius: 3px; background: #ffe0e2; color: #891c21
 .checklist { display: grid; margin: 20px 0 28px; }
 .checklist label { display: flex; align-items: baseline; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--line); }
 .checklist input { flex: none; width: 20px; height: 20px; margin: 0; accent-color: var(--b); }
+.section-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 18px; padding: 24px 0; }
+.section-controls span { font-size: 14px; font-weight: 700; }
+.section-controls button { min-height: 48px; padding: 10px 18px; border: 2px solid var(--ink); border-radius: 8px; background: var(--b); color: white; font-size: 16px; font-weight: 900; box-shadow: 3px 3px 0 var(--ink); }
+.section-controls button:first-child { background: white; color: var(--ink); }
+.section-controls button:disabled { opacity: .4; cursor: default; box-shadow: none; }
 footer { display: flex; justify-content: space-between; gap: 16px; padding: 26px 0; border-top: 2px solid var(--ink); font-size: 13px; }
 footer b { color: var(--r); font-size: 18px; }
 @media (max-width: 600px) {
