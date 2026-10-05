@@ -52,6 +52,90 @@ function createRoute(user, missing = false, slug = "misija-rtanj") {
 }
 
 const lessonThreeSlug = "rod-muzhskoy-zhenskiy-sredniy";
+const lessonFourSlug = "prilagatelnye";
+const lessonFourFiles = ["index.html", "styles.css", "lesson.js", "question-reference.png"];
+
+test("lesson 4 protects every file before reading it", async () => {
+  for (const user of [null, ...["pending", "rejected", "revoked"].map(accessStatus => ({ accessStatus }))]) {
+    const route = createRoute(user, false, lessonFourSlug);
+    for (const file of lessonFourFiles) {
+      const response = await route.get([file]);
+      assert.equal(response.status, user ? 403 : 401);
+      assert.equal(response.headers.get("cache-control"), "private, no-store");
+    }
+    assert.equal(route.calls.reads, 0);
+  }
+});
+
+test("approved students and admins receive only known lesson 4 assets", async () => {
+  for (const user of [{ accessStatus: "approved" }, { isAdmin: true, accessStatus: "revoked" }]) {
+    const route = createRoute(user, false, lessonFourSlug);
+    for (const file of lessonFourFiles) {
+      assert.ok(readFileSync(new URL(`lesson-content/lesson-04/${file}`, root)).length);
+      const response = await route.get([file]);
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get("cache-control"), "private, no-store");
+      assert.equal(response.headers.get("content-security-policy"), "frame-ancestors 'self'");
+      assert.match(route.calls.paths.at(-1), /lesson-content[/\\]lesson-04[/\\]/);
+      if (file.endsWith(".png")) assert.equal(response.headers.get("content-type"), "image/png");
+    }
+    const reads = route.calls.reads;
+    for (const file of ["Lesson.tsx", "entry.tsx", "../lesson-03/index.html", "audio/section-01.mp3", "assets/lucide.min.js"]) {
+      assert.equal((await route.get(file.split("/"))).status, 404);
+    }
+    assert.equal(route.calls.reads, reads);
+  }
+});
+
+test("lesson 4 is embedded below its course title only for authorized users", async () => {
+  for (const user of [null, { accessStatus: "pending" }, { accessStatus: "approved" }, { isAdmin: true }]) {
+    const page = loadModule("app/lessons/[slug]/page.tsx", {
+      "next/link": ({ children, ...props }) => React.createElement("a", props, children),
+      "next/navigation": { notFound: () => { throw new Error("Not found"); } },
+      "@/data/lessons": lessons,
+      "@/lib/access-control": access,
+      "@/lib/supabase-server": { getCurrentUser: async () => user, logActivity: async () => {} },
+      "@/components/LessonOneGammaExperience": () => null,
+      "@/components/LessonTwoExperience": () => null,
+      "@/components/LessonThreeExperience": () => null,
+      "@/components/LessonFourExperience": loadModule("components/LessonFourExperience.tsx").default,
+      "@/components/LessonSeventeenExperience": () => null,
+      "@/components/LessonEighteenExperience": () => null,
+    });
+    const html = renderToStaticMarkup(await page.default({ params: Promise.resolve({ slug: lessonFourSlug }) }));
+    const frame = html.indexOf(`src="/api/lesson-content/${lessonFourSlug}/index.html"`);
+    if (access.canOpenLesson(user, lessons.getLessonBySlug(lessonFourSlug))) {
+      assert.ok(frame > html.indexOf("Telegram-пост"));
+      assert.match(html, /Вопросы, глагол бити/);
+      assert.doesNotMatch(html, /Описание людей и предметов|example\.com/);
+    } else {
+      assert.equal(frame, -1);
+    }
+  }
+});
+
+test("lesson 4 retains original media, complete homework and eight empty audio players", () => {
+  const Lesson = loadModule("lesson-content/lesson-04/Lesson.tsx").default;
+  const html = renderToStaticMarkup(React.createElement(Lesson));
+  const sections = ["opening", "questions", "molim", "practice", "comic", "learning", "homework"];
+  let previous = -1;
+  for (const id of sections) {
+    const offset = html.indexOf(`id="${id}"`);
+    assert.ok(offset > previous);
+    previous = offset;
+  }
+  assert.equal((html.match(/<audio\b/g) || []).length, 8);
+  assert.doesNotMatch(html.match(/<audio\b[^>]*>/g).join(""), /src=/);
+  assert.doesNotMatch(html.slice(html.indexOf('id="homework"')), /<audio\b/);
+  assert.match(html, /src="\.\/question-reference\.png"/);
+  assert.match(html, /e21c2589eaa04927a3ad367cc4697d0b\/original\/image\.png/);
+  assert.equal((html.match(/\/original\/blob\.png/g) || []).length, 6);
+  assert.match(html, /learningapps\.org\/display\?v=pyj65zkf326/);
+  for (let number = 5; number <= 10; number++) assert.match(html, new RegExp(`Упражнение ${number}`));
+  assert.match(html, /Мой опросник:/);
+  assert.doesNotMatch(html, /site-header|ty-serb-lesson-four.*chatgpt\.site/);
+});
+
 const lessonThreeFiles = [
   "index.html", "styles.css", "lesson.js", "comic.png",
   ...["00-intro", "01-comic", "02-comic-translation", "03-countries-instruction",
@@ -119,6 +203,7 @@ test("lesson 3 appears below existing materials only for approved students", asy
       "@/components/LessonOneGammaExperience": () => null,
       "@/components/LessonTwoExperience": () => null,
       "@/components/LessonThreeExperience": loadModule("components/LessonThreeExperience.tsx").default,
+      "@/components/LessonFourExperience": () => null,
       "@/components/LessonSeventeenExperience": () => null,
       "@/components/LessonEighteenExperience": () => null,
     });
@@ -266,6 +351,7 @@ test("lesson 2 appears below the existing material card only for authorized stud
       "@/components/LessonOneGammaExperience": () => null,
       "@/components/LessonTwoExperience": loadModule("components/LessonTwoExperience.tsx").default,
       "@/components/LessonThreeExperience": loadModule("components/LessonThreeExperience.tsx").default,
+      "@/components/LessonFourExperience": () => null,
       "@/components/LessonSeventeenExperience": () => null,
       "@/components/LessonEighteenExperience": () => null,
     });
