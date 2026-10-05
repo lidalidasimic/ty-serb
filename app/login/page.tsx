@@ -61,7 +61,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               type="checkbox"
               className="size-5 accent-serbian-blue"
             />
-            Запомнить меня
+            Запомнить меня на этом устройстве
           </label>
           <button className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-lg border-2 border-ink bg-serbian-blue px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">
             <LogIn size={18} aria-hidden />

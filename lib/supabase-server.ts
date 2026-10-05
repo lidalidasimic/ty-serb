@@ -1,11 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { isAdminEmail, type AccessStatus, type AppUser } from "@/lib/access-control";
-
-const accessTokenCookie = "ty_serb_access_token";
-const refreshTokenCookie = "ty_serb_refresh_token";
-const rememberMeCookie = "ty_serb_remember_me";
-const rememberMeMaxAge = 60 * 60 * 24 * 30;
+import { accessTokenCookie, refreshTokenCookie, rememberMeCookie, sessionCookieOptions } from "@/lib/auth-session";
 
 type SupabaseUserResponse = {
   id: string;
@@ -121,30 +117,12 @@ async function setSessionCookies(session: SupabaseSessionResponse, rememberMe = 
   }
 
   const cookieStore = await cookies();
-  const persistentOptions = rememberMe ? { maxAge: rememberMeMaxAge } : {};
-  cookieStore.set(accessTokenCookie, session.access_token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    ...persistentOptions,
-  });
-  cookieStore.set(refreshTokenCookie, session.refresh_token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    ...persistentOptions,
-  });
+  const options = sessionCookieOptions(rememberMe);
+  cookieStore.set(accessTokenCookie, session.access_token, options);
+  cookieStore.set(refreshTokenCookie, session.refresh_token, options);
 
   if (rememberMe) {
-    cookieStore.set(rememberMeCookie, "1", {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: rememberMeMaxAge,
-    });
+    cookieStore.set(rememberMeCookie, "1", options);
   } else {
     cookieStore.delete(rememberMeCookie);
   }
@@ -160,31 +138,6 @@ export async function clearSessionCookies() {
 export async function getAccessTokenFromCookies() {
   const cookieStore = await cookies();
   return cookieStore.get(accessTokenCookie)?.value ?? null;
-}
-
-async function getRefreshTokenFromCookies() {
-  const cookieStore = await cookies();
-  return cookieStore.get(refreshTokenCookie)?.value ?? null;
-}
-
-async function shouldRememberSession() {
-  const cookieStore = await cookies();
-  return cookieStore.get(rememberMeCookie)?.value === "1";
-}
-
-async function refreshSessionFromCookies() {
-  const refreshToken = await getRefreshTokenFromCookies();
-  if (!refreshToken) {
-    return null;
-  }
-
-  const session = (await supabaseAuthFetch("/auth/v1/token?grant_type=refresh_token", {
-    method: "POST",
-    body: JSON.stringify({ refresh_token: refreshToken }),
-  })) as SupabaseSessionResponse;
-
-  await setSessionCookies(session, await shouldRememberSession());
-  return session.access_token ?? null;
 }
 
 async function getAuthUserWithToken(accessToken: string) {
@@ -284,25 +237,13 @@ export async function getProfile(userId: string) {
 }
 
 export async function getCurrentUser(): Promise<AppUser | null> {
-  let accessToken = await getAccessTokenFromCookies();
+  const accessToken = await getAccessTokenFromCookies();
   if (!accessToken) {
-    accessToken = await refreshSessionFromCookies().catch(() => null);
-    if (!accessToken) {
-      return null;
-    }
+    return null;
   }
 
   try {
-    let authUser: SupabaseUserResponse;
-    try {
-      authUser = await getAuthUserWithToken(accessToken);
-    } catch {
-      const refreshedAccessToken = await refreshSessionFromCookies();
-      if (!refreshedAccessToken) {
-        return null;
-      }
-      authUser = await getAuthUserWithToken(refreshedAccessToken);
-    }
+    const authUser = await getAuthUserWithToken(accessToken);
 
     if (!authUser.id || !authUser.email) {
       return null;

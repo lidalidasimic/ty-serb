@@ -70,7 +70,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
               defaultChecked
               className="size-5 accent-serbian-red"
             />
-            Запомнить меня
+            Запомнить меня на этом устройстве
           </label>
           <button className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-lg border-2 border-ink bg-serbian-red px-5 py-3 font-black text-white shadow-[3px_3px_0_#202124]">
             <UserPlus size={18} aria-hidden />
