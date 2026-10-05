@@ -163,7 +163,6 @@ export default function Lesson() {
         <p className="lead">Danas učimo o profesijama! Обрати пажњу како се граде називи у женском роду.</p>
         <Audio track="professions" />
         <ol className="profs">{profs.map(x => <li key={x}>{x}</li>)}</ol>
-        <div className="images"><img loading="lazy" src="/api/lesson-content/kak-predstavitsya/images/lesson-02-professions-01.png" alt="Професије, први део" /><img loading="lazy" src="/api/lesson-content/kak-predstavitsya/images/lesson-02-professions-02.png" alt="Професије, други део" /></div>
         <aside><b>Погодите шта значе речи:</b><p>таксиста, адвокат, дипломата, пилот, пекар, судија, контролор, директор, фотограф, возач, чувар, рачуновођа, музичар, астронаут, инфлуенсер?</p></aside>
         <LearningApp id="pczrn0skn26" title="Професије" description="Повежи назив професије са руским преводом." />
       </section>
