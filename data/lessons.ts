@@ -201,7 +201,7 @@ export const lessons: Lesson[] = [
     topic: "Прилагательные",
     status: "готово",
     description:
-      "Продолжаем курс сербского языка и тренируем понимание, фразы и разговорную практику.",
+      "Читаем комикс о пропавших словах, согласуем прилагательные в трёх родах и закрепляем их в упражнениях и играх.",
     gammaLink: "https://tyserb11-xywikv6.gamma.site/",
     homeworkLink: "",
     telegramPostLink: "https://t.me/tyserb",

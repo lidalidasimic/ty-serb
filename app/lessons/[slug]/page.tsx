@@ -16,6 +16,7 @@ import LessonOneGammaExperience from "@/components/LessonOneGammaExperience";
 import LessonTwoExperience from "@/components/LessonTwoExperience";
 import LessonThreeExperience from "@/components/LessonThreeExperience";
 import LessonFourExperience from "@/components/LessonFourExperience";
+import LessonElevenExperience from "@/components/LessonElevenExperience";
 import LessonSeventeenExperience from "@/components/LessonSeventeenExperience";
 import LessonEighteenExperience from "@/components/LessonEighteenExperience";
 
@@ -209,6 +210,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
       {lesson.number === 2 ? <LessonTwoExperience /> : null}
       {lesson.number === 3 ? <LessonThreeExperience /> : null}
       {lesson.number === 4 ? <LessonFourExperience /> : null}
+      {lesson.number === 11 ? <LessonElevenExperience /> : null}
       {lesson.number === 1 ? (
         <>
           <section className="bg-[#f8f1e7] px-4 py-12 sm:px-6 sm:py-16 lg:px-8">

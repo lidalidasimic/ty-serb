@@ -42,6 +42,9 @@ function isAllowedFile(lessonNumber: number, file: string) {
   if (lessonNumber === 4) {
     return ["index.html", "styles.css", "lesson.js", "question-reference.png"].includes(file);
   }
+  if (lessonNumber === 11) {
+    return ["index.html", "styles.css", "lesson.js", "comic.png"].includes(file);
+  }
   if (lessonNumber === 3) {
     return ["index.html", "styles.css", "lesson.js", "comic.png"].includes(file)
       || (file.startsWith("audio/") && lessonThreeAudio.has(file.slice(6)));
@@ -63,7 +66,7 @@ export async function GET(request: NextRequest, { params }: ContentRouteProps) {
   const lesson = getLessonBySlug(slug);
   const privateHeaders = { "Cache-Control": "private, no-store" };
 
-  if (!lesson || ![2, 3, 4, 18].includes(lesson.number)) {
+  if (!lesson || ![2, 3, 4, 11, 18].includes(lesson.number)) {
     return NextResponse.json({ error: "Материал не найден" }, { status: 404, headers: privateHeaders });
   }
 

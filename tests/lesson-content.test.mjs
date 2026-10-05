@@ -67,6 +67,21 @@ test("lesson 4 protects every file before reading it", async () => {
   }
 });
 
+const lessonElevenSlug = "ucimo-srpski-11";
+const lessonElevenFiles = ["index.html", "styles.css", "lesson.js", "comic.png"];
+
+test("all lesson 11 assets require approved access before any filesystem read", async () => {
+  for (const user of [null, ...["pending", "rejected", "revoked"].map(accessStatus => ({ accessStatus }))]) {
+    const route = createRoute(user, false, lessonElevenSlug);
+    for (const file of lessonElevenFiles) {
+      const response = await route.get([file]);
+      assert.equal(response.status, user ? 403 : 401);
+      assert.equal(response.headers.get("cache-control"), "private, no-store");
+    }
+    assert.equal(route.calls.reads, 0);
+  }
+});
+
 test("approved students and admins receive only known lesson 4 assets", async () => {
   for (const user of [{ accessStatus: "approved" }, { isAdmin: true, accessStatus: "revoked" }]) {
     const route = createRoute(user, false, lessonFourSlug);
@@ -99,6 +114,7 @@ test("lesson 4 is embedded below its course title only for authorized users", as
       "@/components/LessonTwoExperience": () => null,
       "@/components/LessonThreeExperience": () => null,
       "@/components/LessonFourExperience": loadModule("components/LessonFourExperience.tsx").default,
+      "@/components/LessonElevenExperience": () => null,
       "@/components/LessonSeventeenExperience": () => null,
       "@/components/LessonEighteenExperience": () => null,
     });
@@ -110,6 +126,53 @@ test("lesson 4 is embedded below its course title only for authorized users", as
       assert.doesNotMatch(html, /Описание людей и предметов|example\.com/);
     } else {
       assert.equal(frame, -1);
+    }
+  }
+});
+
+test("approved students receive lesson 11 assets only from its private folder", async () => {
+  const route = createRoute({ accessStatus: "approved" }, false, lessonElevenSlug);
+  for (const file of lessonElevenFiles) {
+    assert.ok(readFileSync(new URL(`lesson-content/lesson-11/${file}`, root)).length);
+    const response = await route.get([file]);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("cache-control"), "private, no-store");
+    assert.equal(response.headers.get("content-security-policy"), "frame-ancestors 'self'");
+    assert.match(route.calls.paths.at(-1), /lesson-content[/\\]lesson-11[/\\]/);
+  }
+  for (const file of ["Lesson.tsx", "entry.tsx", "../lesson-03/index.html", "audio/00-intro.m4a", "missing.png"]) {
+    assert.equal((await route.get(file.split("/"))).status, 404);
+  }
+  assert.equal(route.calls.reads, lessonElevenFiles.length);
+  assert.equal((await createRoute({ accessStatus: "approved" }, true, lessonElevenSlug).get(["index.html"])).status, 404);
+});
+
+test("lesson 11 appears below the platform materials only for approved students", async () => {
+  for (const user of [null, { id: "student", accessStatus: "pending" }, { id: "student", accessStatus: "approved" }]) {
+    const page = loadModule("app/lessons/[slug]/page.tsx", {
+      "next/link": ({ children, ...props }) => React.createElement("a", props, children),
+      "next/navigation": { notFound: () => { throw new Error("Not found"); } },
+      "@/data/lessons": lessons,
+      "@/lib/access-control": access,
+      "@/lib/supabase-server": { getCurrentUser: async () => user, logActivity: async () => {} },
+      "@/components/LessonOneGammaExperience": () => null,
+      "@/components/LessonTwoExperience": () => null,
+      "@/components/LessonThreeExperience": () => null,
+      "@/components/LessonFourExperience": () => null,
+      "@/components/LessonElevenExperience": loadModule("components/LessonElevenExperience.tsx").default,
+      "@/components/LessonSeventeenExperience": () => null,
+      "@/components/LessonEighteenExperience": () => null,
+    });
+    const html = renderToStaticMarkup(await page.default({ params: Promise.resolve({ slug: lessonElevenSlug }) }));
+    const frame = html.indexOf(`src="/api/lesson-content/${lessonElevenSlug}/index.html"`);
+    if (user?.accessStatus === "approved") {
+      assert.ok(frame > html.indexOf("Открыть презентацию"));
+      assert.ok(frame > html.indexOf("Telegram-пост"));
+      assert.match(html, /href="\/lessons\/ucimo-srpski-10"/);
+      assert.match(html, /href="\/lessons\/ucimo-srpski-12"/);
+    } else {
+      assert.equal(frame, -1);
+      assert.match(html, /Доступ к материалам ожидает подтверждения/);
     }
   }
 });
@@ -136,6 +199,18 @@ test("lesson 4 retains original media, complete homework and eight empty audio p
   assert.doesNotMatch(html, /site-header|ty-serb-lesson-four.*chatgpt\.site/);
 });
 
+test("lesson 11 embeds the two requested LearningApps at the end", () => {
+  const lesson = loadModule("lesson-content/lesson-11/Lesson.tsx").default;
+  const html = renderToStaticMarkup(React.createElement(lesson));
+  assert.equal((html.match(/<iframe /g) || []).length, 2);
+  for (const id of ["pe514bjca26", "ppi7p6qnj26"]) {
+    const frame = html.indexOf(`src="https://learningapps.org/watch?v=${id}"`);
+    assert.ok(frame > html.indexOf('id="homework"'));
+    assert.ok(html.includes(`href="https://learningapps.org/watch?id=${id}"`));
+  }
+  assert.doesNotMatch(html, /pyj65zkf326|pezs2mbpa26/);
+  assert.match(html, /src="\.\/comic\.png"/);
+});
 const lessonThreeFiles = [
   "index.html", "styles.css", "lesson.js", "comic.png",
   ...["00-intro", "01-comic", "02-comic-translation", "03-countries-instruction",
@@ -204,6 +279,7 @@ test("lesson 3 appears below existing materials only for approved students", asy
       "@/components/LessonTwoExperience": () => null,
       "@/components/LessonThreeExperience": loadModule("components/LessonThreeExperience.tsx").default,
       "@/components/LessonFourExperience": () => null,
+      "@/components/LessonElevenExperience": () => null,
       "@/components/LessonSeventeenExperience": () => null,
       "@/components/LessonEighteenExperience": () => null,
     });
@@ -352,6 +428,7 @@ test("lesson 2 appears below the existing material card only for authorized stud
       "@/components/LessonTwoExperience": loadModule("components/LessonTwoExperience.tsx").default,
       "@/components/LessonThreeExperience": loadModule("components/LessonThreeExperience.tsx").default,
       "@/components/LessonFourExperience": () => null,
+      "@/components/LessonElevenExperience": () => null,
       "@/components/LessonSeventeenExperience": () => null,
       "@/components/LessonEighteenExperience": () => null,
     });
