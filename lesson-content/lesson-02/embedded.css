@@ -19,10 +19,11 @@
 [data-lesson-two] [data-lesson-section][hidden] { display: none !important; }
 [data-lesson-two] .progress { position: sticky; z-index: 41; top: var(--lesson-top, 0px); height: 4px; background: #e4e8ec; }
 [data-lesson-two] .progress i { display: block; height: 100%; background: var(--r); }
+[data-lesson-two] .fireworks { position: fixed; inset: 0; z-index: 100; width: 100%; height: 100%; pointer-events: none; }
 [data-lesson-two] .lesson-navigation { position: sticky; top: calc(var(--lesson-top, 0px) + 4px); z-index: 40; background: var(--bg); padding: 16px 0 8px; border-bottom: 2px solid var(--ink); }
 [data-lesson-two] .brandbar { display: flex; align-items: center; gap: 18px; height: 28px; font-size: 14px; font-weight: 900; }
 [data-lesson-two] .brandbar a { margin-right: auto; color: var(--r); font-size: 20px; text-decoration: none; }
-[data-lesson-two] .lesson-rail { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 5px; margin-top: 12px; }
+[data-lesson-two] .lesson-rail { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 5px; margin-top: 12px; }
 [data-lesson-two] .lesson-rail a { display: flex; align-items: center; justify-content: center; height: 36px; border: 2px solid var(--ink); border-radius: 6px; color: var(--ink); background: white; text-decoration: none; font-size: 12px; font-weight: 900; transition: background-color .15s; }
 [data-lesson-two] .lesson-rail a:hover { background: #e4eef9; }
 [data-lesson-two] .lesson-rail a.active { color: white; background: var(--b); box-shadow: 2px 2px 0 var(--ink); }

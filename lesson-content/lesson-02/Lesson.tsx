@@ -2,12 +2,11 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
-const storageKey = "tyserb-lesson-02";
 const sections = [
   ["intro", "Вступление"], ["reading", "Диалог"], ["vocabulary", "Профессии"],
   ["comic", "Комикс"], ["grammar", "Глагол biti"], ["comparison", "Ovo, to, ono"],
   ["practice", "Практика"], ["phrases", "Фразы для урока"],
-  ["homework", "Домашнее задание"], ["recap", "Итоги"],
+  ["homework", "Домашнее задание"],
 ] as const;
 const audioTracks = {
   intro: { number: "01", file: "lesson-02-01-intro.m4a", name: "Вступление к уроку" },
@@ -140,25 +139,80 @@ function Quiz() {
   </div>;
 }
 
+function Fireworks() {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const canvas = ref.current;
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) return;
+    const ratio = Math.min(devicePixelRatio || 1, 2);
+    const resize = () => {
+      canvas.width = innerWidth * ratio;
+      canvas.height = innerHeight * ratio;
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    };
+    resize();
+    addEventListener("resize", resize);
+    type Spark = { x: number; y: number; vx: number; vy: number; life: number; color: string };
+    const sparks: Spark[] = [];
+    const colors = ["#c6363c", "#0c4076", "#e8a317", "#167446"];
+    const start = performance.now();
+    let frame = 0;
+    let previous = 0;
+    let bursts = 0;
+    function draw(now: number) {
+      const elapsed = now - start;
+      const step = Math.min((now - (previous || now)) / 16.67, 2);
+      previous = now;
+      if (bursts < 7 && elapsed >= bursts * 350) {
+        const x = innerWidth * (0.15 + ((bursts * 37) % 70) / 100);
+        const y = innerHeight * (0.2 + (bursts % 3) * 0.13);
+        for (let i = 0; i < 48; i++) {
+          const angle = i * Math.PI * 2 / 48;
+          const speed = 2.5 + Math.random() * 3.5;
+          sparks.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 1, color: colors[i % colors.length] });
+        }
+        bursts++;
+      }
+      context!.clearRect(0, 0, innerWidth, innerHeight);
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const spark = sparks[i];
+        spark.x += spark.vx * step; spark.y += spark.vy * step;
+        spark.vy += 0.035 * step; spark.life -= 0.01 * step;
+        if (spark.life <= 0) { sparks.splice(i, 1); continue; }
+        context!.globalAlpha = spark.life;
+        context!.strokeStyle = spark.color;
+        context!.lineWidth = 3;
+        context!.beginPath(); context!.moveTo(spark.x, spark.y);
+        context!.lineTo(spark.x - spark.vx * 2, spark.y - spark.vy * 2); context!.stroke();
+      }
+      if (elapsed < 5000) frame = requestAnimationFrame(draw);
+    }
+    frame = requestAnimationFrame(draw);
+    return () => { cancelAnimationFrame(frame); removeEventListener("resize", resize); };
+  }, []);
+  return <canvas ref={ref} className="fireworks" aria-hidden="true" />;
+}
+
 export default function Lesson() {
   const [active, setActive] = useState(0);
   const rootRef = useRef<HTMLElement>(null);
   const scrollRequested = useRef(false);
-  const [done, setDone] = useState(false);
-  const [checks, setChecks] = useState<boolean[]>([]);
+  const previousSection = useRef("intro");
+  const [celebrating, setCelebrating] = useState(false);
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved === "done") setDone(true);
-      else if (saved) {
-        const data = JSON.parse(saved);
-        setDone(Boolean(data.done));
-        setChecks(Array.isArray(data.checks) ? data.checks : []);
-      }
-    } catch { /* Browser storage is optional. */ }
-  }, []);
+    const currentSection = sections[active][0];
+    const celebrate = previousSection.current === "phrases" && currentSection === "homework";
+    previousSection.current = currentSection;
+    setCelebrating(celebrate);
+    if (!celebrate) return;
+    const timer = setTimeout(() => setCelebrating(false), 5000);
+    return () => clearTimeout(timer);
+  }, [active]);
   useEffect(() => {
     const update = () => {
+      if (location.hash === "#recap") history.replaceState(null, "", "#homework");
       const index = sections.findIndex(([id]) => "#" + id === location.hash);
       scrollRequested.current = index >= 0;
       setActive(index < 0 ? 0 : index);
@@ -181,9 +235,6 @@ export default function Lesson() {
     setActive(index);
     if (location.hash !== "#" + sections[index][0]) history.pushState(null, "", "#" + sections[index][0]);
     if (index === active) rootRef.current?.scrollIntoView({ block: "start", behavior: "instant" });
-  };
-  const persist = (nextDone: boolean, nextChecks: boolean[]) => {
-    try { localStorage.setItem(storageKey, JSON.stringify({ done: nextDone, checks: nextChecks })); } catch { /* Browser storage is optional. */ }
   };
   return <main ref={rootRef} className="lesson-two-content">
     <div className="progress" aria-hidden="true"><i style={{ width: (active + 1) / sections.length * 100 + "%" }} /></div>
@@ -265,16 +316,9 @@ export default function Lesson() {
         <article className="paper"><h3>Упражнение 1</h3><p>— Добар дан!<br />— ____________ Како се зовеш?<br />— Ја сам Милица. А ти?<br />— Ја сам Маја. Ја сам из Ниша. Одакле си ти?<br />— Ја сам из Суботице.<br />— Драго ми је.<br />— ______________________________.</p><h3>Упражнение 2</h3><p>Вставьте глагол бити: Ја ___ лекарка. Ти ___ учитељица. Он ___ бизнисмен. Она ___ програмерка. Ми ___ менаџери. Ви ___ политичари. Они ___ зубари. Оне ___ фризерке. Драган ___ ветеринар, Јелена ___ новинар. Џон ___ лекар.</p><h3>Упражнение 3</h3><p><b>а)</b> Ви ___ програмер? — Не, ја ___ менаџер. Програмер ___ у следећем кабинету. Ја ___ Мила, ваш нови правник. Драго ми ___. Ја ___ Стефан.<br /><br /><b>б)</b> Ја ___ ваша нова учитељица Ана. Ја ___ Милан. Ја ___ Љубица. Драго ми ___. Ви ___ из Београда? Да, ми ___ из Београда. Наши родитељи ___ из Русије, они ___ из Москве.</p></article>
         <Feedback section="homework" />
       </section>
-      <section id="recap" data-lesson-section hidden={active !== 9}>
-        <div className="no">09 · ЗАВРШЕТАК</div><h2>Шта сада умем?</h2>
-        <div className="checklist">{["Кажем своју професију.", "Препознајем мушки и женски род професија.", "Знам: сам, си, је, смо, сте, су.", "Питам: Је л’ говорите српски?", "Користим фразе за час."].map((x, i) => <label key={x}><input type="checkbox" checked={Boolean(checks[i])} onChange={event => {
-          const next = [...checks]; next[i] = event.target.checked; setChecks(next); persist(done, next);
-        }} />{x}</label>)}</div>
-        <button className="finish" onClick={() => { setDone(true); persist(true, checks); }}>{done ? "Лекција је завршена ✓" : "Завершить урок"}</button>
-        <Feedback section="recap" />
-      </section>
       <nav className="section-controls" aria-label="Переход между разделами"><button disabled={active === 0} onClick={() => openSection(active - 1)}>Назад</button><span>{active + 1} / {sections.length}</span><button disabled={active === sections.length - 1} onClick={() => openSection(active + 1)}>Далее</button></nav>
       <footer><b>TY SERB</b><span>Лекција 02 · Лидија Симић</span></footer>
     </div>
+    {celebrating && <Fireworks />}
   </main>;
 }

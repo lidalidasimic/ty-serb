@@ -515,12 +515,14 @@ test("lesson 2 initially exposes one section and keeps all media protected", () 
   const Lesson = loadModule("lesson-content/lesson-02/Lesson.tsx").default;
   const html = renderToStaticMarkup(React.createElement(Lesson));
   const sections = html.match(/<(?:header|section)\b[^>]*data-lesson-section[^>]*>/g);
-  assert.equal(sections.length, 10);
+  assert.equal(sections.length, 9);
   assert.equal(sections.filter(section => !/\bhidden=/.test(section)).length, 1);
   assert.match(sections.find(section => !/\bhidden=/.test(section)), /id="intro"/);
   assert.equal((html.match(/data-lesson-audio=/g) || []).length, 9);
   assert.equal((html.match(/\.m4a\?v=balanced-stereo/g) || []).length, 9);
-  assert.equal((html.match(/data-lesson-feedback=/g) || []).length, 10);
+  assert.equal((html.match(/data-lesson-feedback=/g) || []).length, 9);
+  assert.doesNotMatch(html, /id="recap"|href="#recap"|Раздел 10:|Шта сада умем/);
+  assert.match(html, /Раздел 9: Домашнее задание/);
   for (const section of html.match(/<(header|section)\b[^>]*data-lesson-section[^>]*>[\s\S]*?<\/\1>/g) || []) {
     const id = section.match(/\bid="([^"]+)"/)[1];
     assert.match(section, new RegExp(`data-lesson-feedback="l2-${id}"`));
