@@ -331,6 +331,65 @@ test("lesson 3 feedback accepts only its known sections and preserves lesson 1 s
   assert.equal(invalid.submissions.length, 0);
 });
 
+test("lesson 2 feedback accepts every known section from the course and its Site", async () => {
+  for (const origin of ["https://ty-serb.vercel.app", "https://ty-serb-lesson-two.lixi141210.chatgpt.site"]) {
+    for (const section of ["intro", "reading", "vocabulary", "comic", "grammar", "comparison", "practice", "phrases", "homework", "recap"]) {
+      const route = createFeedbackRoute();
+      const response = await route.submit({ lessonSlug: "kak-predstavitsya", section: `l2-${section}`, name: " Лида ", message: " Мой вопрос " }, origin);
+      assert.equal(response.status, 200);
+      assert.equal((await response.json()).ok, true);
+      assert.equal(route.submissions[0].lessonSlug, "kak-predstavitsya");
+      assert.equal(route.submissions[0].section, `l2-${section}`);
+      assert.equal(route.submissions[0].name, "Лида");
+      assert.equal(route.submissions[0].message, "Мой вопрос");
+      assert.equal(route.submissions[0].kind, "feedback");
+      assert.equal(response.headers.get("access-control-allow-origin"), origin.includes("chatgpt.site") ? origin : null);
+      assert.equal((await route.submit({ lessonSlug: "kak-predstavitsya", section: `l2-${section}`, message: "Ещё вопрос" }, origin)).status, 429);
+    }
+  }
+});
+
+test("lesson 2 rejects unknown sections, empty comments and introduction messages", async () => {
+  const route = createFeedbackRoute();
+  for (const extra of [{ section: "l2-unknown" }, { section: "l3-intro" }, { section: "1" }, { message: " " }, { kind: "introduction" }]) {
+    assert.equal((await route.submit({ lessonSlug: "kak-predstavitsya", section: "l2-intro", message: "Вопрос", ...extra }, "https://ty-serb.vercel.app")).status, 400);
+  }
+  assert.equal(route.submissions.length, 0);
+});
+
+test("lesson 2 feedback preflight permits only its exact Site origin and storage failures are reported", async () => {
+  const route = createFeedbackRoute(true);
+  const origin = "https://ty-serb-lesson-two.lixi141210.chatgpt.site";
+  const preflight = await route.route.OPTIONS(new Request("https://ty-serb.vercel.app/api/lesson-feedback", { method: "OPTIONS", headers: { origin } }));
+  assert.equal(preflight.status, 204);
+  assert.equal(preflight.headers.get("access-control-allow-origin"), origin);
+  assert.equal(preflight.headers.get("access-control-allow-credentials"), null);
+  const untrustedOrigin = "https://ty-serb-lesson-two.lixi141210.chatgpt.site.unrelated.example";
+  assert.equal((await route.route.OPTIONS(new Request("https://ty-serb.vercel.app/api/lesson-feedback", { method: "OPTIONS", headers: { origin: untrustedOrigin } }))).status, 403);
+  assert.equal((await route.submit({ lessonSlug: "kak-predstavitsya", section: "l2-intro", message: "Вопрос" }, untrustedOrigin)).status, 403);
+  const failed = await route.submit({ lessonSlug: "kak-predstavitsya", section: "l2-intro", message: "Вопрос" }, origin);
+  assert.equal(failed.status, 500);
+  assert.doesNotMatch(await failed.text(), /private database failure|"ok":true/);
+});
+
+test("lesson 2 feedback reaches the existing teacher moderation panel", async () => {
+  const route = createFeedbackRoute();
+  await route.submit({ lessonSlug: "kak-predstavitsya", section: "l2-grammar", name: "Лида", message: "Вопрос о глаголе biti" }, "https://ty-serb.vercel.app");
+  const entry = route.submissions[0];
+  const { default: AdminPage } = loadModule("app/admin/page.tsx", {
+    "@/app/admin/actions": { moderateFeedbackAction() {}, updateAccessStatusAction() {} },
+    "@/lib/supabase-server": {
+      requireAdmin: async () => {}, listProfiles: async () => [],
+      listRecentActivity: async () => [{ id: "feedback-2", user_id: null, lesson_slug: entry.lessonSlug, created_at: "2026-10-06T10:00:00Z", action_type: `lesson_feedback_pending:${JSON.stringify(entry)}` }],
+    },
+  });
+  const html = renderToStaticMarkup(await AdminPage({}));
+  assert.match(html, /Обратная связь по урокам/);
+  assert.match(html, /l2-grammar/);
+  assert.match(html, /Вопрос о глаголе biti/);
+  assert.match(html, /ожидает проверки/);
+});
+
 test("feedback preflight is limited to the lesson Site and failures do not claim delivery", async () => {
   const route = createFeedbackRoute(true);
   const response = await route.route.OPTIONS(new Request("https://ty-serb.vercel.app/api/lesson-feedback", {
@@ -461,6 +520,13 @@ test("lesson 2 initially exposes one section and keeps all media protected", () 
   assert.match(sections.find(section => !/\bhidden=/.test(section)), /id="intro"/);
   assert.equal((html.match(/data-lesson-audio=/g) || []).length, 9);
   assert.equal((html.match(/\.m4a\?v=balanced-stereo/g) || []).length, 9);
+  assert.equal((html.match(/data-lesson-feedback=/g) || []).length, 10);
+  for (const section of html.match(/<(header|section)\b[^>]*data-lesson-section[^>]*>[\s\S]*?<\/\1>/g) || []) {
+    const id = section.match(/\bid="([^"]+)"/)[1];
+    assert.match(section, new RegExp(`data-lesson-feedback="l2-${id}"`));
+    assert.match(section, new RegExp(`for="l2-${id}-message"`));
+    assert.match(section, /<textarea[^>]*required=""[^>]*minlength="2"[^>]*maxlength="1500"/i);
+  }
   assert.doesNotMatch(html, /lesson-02-professions-0[12]\.png/);
   assert.equal((html.match(/<img\b/g) || []).length, 9);
   assert.match(html, /Nepoznate reči/);

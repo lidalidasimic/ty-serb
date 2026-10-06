@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 const storageKey = "tyserb-lesson-02";
 const sections = [
@@ -71,6 +71,53 @@ function LearningApp({ id, title, description }: { id: string; title: string; de
     <div className="embed-wrap"><iframe loading="lazy" src={url} title={title + " — LearningApps"} allowFullScreen /></div>
     <a className="external-link" href={url} target="_blank" rel="noreferrer">Открыть упражнение отдельно ↗</a>
   </div>;
+}
+
+function Feedback({ section }: { section: typeof sections[number][0] }) {
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [error, setError] = useState("");
+  const id = "l2-" + section;
+  const sendFeedback = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (status === "sending") return;
+    if (message.trim().length < 2) {
+      setError("Напиши вопрос или комментарий из двух или более символов.");
+      setStatus("error");
+      return;
+    }
+    setStatus("sending");
+    setError("");
+    try {
+      const response = await fetch("/api/lesson-feedback", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lessonSlug: "kak-predstavitsya", section: id, name: name.trim(), message: message.trim() }),
+      });
+      const result = await response.json();
+      if (!response.ok || result.ok !== true) {
+        setError(typeof result.error === "string" ? result.error : "Не получилось отправить сообщение. Попробуй ещё раз.");
+        setStatus("error");
+        return;
+      }
+      setMessage("");
+      setStatus("sent");
+    } catch {
+      setError("Не получилось отправить сообщение. Проверь соединение и попробуй ещё раз.");
+      setStatus("error");
+    }
+  };
+  return <form className="feedback" data-lesson-feedback={id} aria-labelledby={id + "-feedback-title"} onSubmit={sendFeedback}>
+    <h3 id={id + "-feedback-title"}>Обратная связь</h3>
+    <p className="feedback-prompt">Что понравилось, что было непонятно или что стоит улучшить?</p>
+    <label htmlFor={id + "-name"}>Имя (необязательно)</label>
+    <input id={id + "-name"} name="name" value={name} maxLength={80} disabled={status === "sending"} autoComplete="name" placeholder="Можно оставить пустым" onChange={event => setName(event.target.value)} />
+    <label htmlFor={id + "-message"}>Комментарий</label>
+    <textarea id={id + "-message"} name="message" value={message} required minLength={2} maxLength={1500} rows={4} disabled={status === "sending"} placeholder="Напиши свои мысли, пожелания или вопрос" onChange={event => { setMessage(event.target.value); setStatus("idle"); setError(""); }} />
+    <button type="submit" disabled={status === "sending"}>{status === "sending" ? "Отправляем…" : "Отправить"}</button>
+    {status === "sent" && <p role="status">Спасибо! Сообщение отправлено Лидии.</p>}
+    {status === "error" && <p role="alert">{error}</p>}
+  </form>;
 }
 
 function Quiz() {
@@ -151,12 +198,14 @@ export default function Lesson() {
         <h1>Професије.<br /><em>Глагол biti.</em></h1>
         <p className="lead">Говоримо ко смо и чиме се бавимо. Учимо облике <b>сам, си, је, смо, сте, су</b>.</p>
         <Audio track="intro" />
+        <Feedback section="intro" />
       </header>
 
       <section id="reading" data-lesson-section hidden={active !== 1}>
         <div className="no">01 · УВОДНО ЧИТАЊЕ</div><h2>На пасошкој контроли</h2>
         <Audio track="reading" />
         <div className="cols"><article><h3>Пасошка контрола</h3><p>— Добро јутро!<br />— Добро јутро! Ваш пасош, молим.<br />— Изволите.<br />— Ви сте господин Бонд?<br />— Да, ја сам Стив Бонд.<br />— Ви сте туриста?<br />— Не, ја сам бизнисмен.<br />— Ваша адреса у Београду?<br />— Хотел „Метропол“.<br />— Изволите пасош.<br />— Хвала.</p></article><article><h3>Сусрет <small>· встреча</small></h3><p>— Извините, да ли сте ви господин Бонд?<br />— Да, ја сам Стив Бонд.<br />— Ја сам Љиљана Јовановић.<br />— Драго ми је.<br />— Ви сте Енглез?<br />— Да, ја сам Енглез.<br />— Добро говорите српски!<br />— Хвала.</p></article></div>
+        <Feedback section="reading" />
       </section>
       <section id="vocabulary" data-lesson-section hidden={active !== 2}>
         <div className="no">02 · НОВИ ВОКАБУЛАР</div><h2>Данас учимо о професијама!</h2>
@@ -165,6 +214,7 @@ export default function Lesson() {
         <ol className="profs">{profs.map(x => <li key={x}>{x}</li>)}</ol>
         <aside><b>Погодите шта значе речи:</b><p>таксиста, адвокат, дипломата, пилот, пекар, судија, контролор, директор, фотограф, возач, чувар, рачуновођа, музичар, астронаут, инфлуенсер?</p></aside>
         <LearningApp id="pczrn0skn26" title="Професије" description="Повежи назив професије са руским преводом." />
+        <Feedback section="vocabulary" />
       </section>
       <section id="comic" data-lesson-section hidden={active !== 3}>
         <div className="no">03 · СТРИП</div><h2>Ana, konj u velikom gradu!</h2>
@@ -177,6 +227,7 @@ export default function Lesson() {
         <h3 className="sub">Nepoznate reči · Незнакомые слова</h3><Audio track="words" />
         <dl className="word-list">{comicWords.map(([word, translation]) => <div key={word}><dt lang="sr-Latn">{word}</dt><dd>{translation}</dd></div>)}</dl>
         <h3 className="sub">Prevod · Перевод</h3><Audio track="translation" />
+        <Feedback section="comic" />
       </section>
       <section id="grammar" data-lesson-section hidden={active !== 4}>
         <div className="no">04 · ГРАМАТИКА</div><h2>Глагол JESAM (biti)</h2>
@@ -187,6 +238,7 @@ export default function Lesson() {
         <h3 className="sub">Облици у садашњем времену</h3><Audio track="forms" />
         <div className="forms">{forms.map(x => <div key={x[0]}><span>{x[0]}</span><b>{x[1]}</b><small>{x[2]}</small></div>)}</div>
         <p className="remember">Ја сам Лидија. Он је Марко. Ми смо из Србије. Ви сте из Русије.</p>
+        <Feedback section="grammar" />
       </section>
       <section id="comparison" data-lesson-section hidden={active !== 5}>
         <div className="no">05 · ПОРЕЂЕЊЕ</div><h2>Упоредимо српски и руски</h2>
@@ -194,20 +246,24 @@ export default function Lesson() {
         <h3 className="sub">BITI + показне заменице</h3><Audio track="demonstratives" />
         <div className="formula"><b>Показна заменица + БИТИ + именица</b><p>Ово <mark>ЈЕ</mark> кућа. <small>— This is a house.</small><br />То <mark>ЈЕ</mark> мој брат. <small>— That is my brother.</small><br />Оно <mark>СУ</mark> деца. <small>— Those are children.</small></p></div>
         <div className="images"><img loading="lazy" src="/api/lesson-content/kak-predstavitsya/images/lesson-02-demonstrative-ovo.png" alt="ОВО, ТО, ОНО: близко, дальше, далеко" /><img loading="lazy" src="/api/lesson-content/kak-predstavitsya/images/lesson-02-demonstrative-to.png" alt="ОВО: мой простор, ТО: наш простор, ОНО: далеко" /></div>
+        <Feedback section="comparison" />
       </section>
       <section id="practice" data-lesson-section hidden={active !== 6}>
         <div className="no">06 · ВЕЖБА</div><h2>Провери глагол biti</h2><Quiz />
         <LearningApp id="pdmogn67t26" title="Глагол TO BE на српском" description="Употреби глагол бити у правилном облику." />
+        <Feedback section="practice" />
       </section>
       <section id="phrases" data-lesson-section hidden={active !== 7}>
         <div className="no">07 · БИЋЕ ТИ КОРИСНО</div><h2>Фразе за час</h2>
         <div className="phrases"><article><h3>Извините…</h3><p>Извините, шта значи ова реч? <small>— слово</small><br />Шта ово значи? <small>— что это значит?</small><br />Како се пише…? Како се чита…?</p></article><article><h3>Објашњења</h3><p>Је л’ можете да поновите? <small>— повторить</small><br />Молим Вас, поновите, нисам разумео/разумела.<br />Не разумем…</p></article><article><h3>Како да кажем</h3><p>Нисам сигуран/сигурна. <small>— Я не уверен/а.</small><br />Професоре/Професорка…<br />Могу ли да Вас нешто питам?</p></article><article><h3>Је л’ говорите српски?</h3><p>Да, (по)мало. / Говорим (по)мало. / Причам (по)мало.<br />Разумем помало. / Знам нешто.</p></article></div>
+        <Feedback section="phrases" />
       </section>
       <section id="homework" data-lesson-section hidden={active !== 8}>
         <div className="no">08 · ДОМАЋИ ЗАДАТАК</div><h2>Вежбе за код куће</h2>
         <LearningApp id="pvoby9i1k26" title="1. Нове речи" description="Понови и утврди нови вокабулар из лекције." />
         <LearningApp id="p6pbz143t26" title="2. Упиши глагол бити" description="Упиши ЈЕСАМ / БИТИ у правилном облику." />
         <article className="paper"><h3>Упражнение 1</h3><p>— Добар дан!<br />— ____________ Како се зовеш?<br />— Ја сам Милица. А ти?<br />— Ја сам Маја. Ја сам из Ниша. Одакле си ти?<br />— Ја сам из Суботице.<br />— Драго ми је.<br />— ______________________________.</p><h3>Упражнение 2</h3><p>Вставьте глагол бити: Ја ___ лекарка. Ти ___ учитељица. Он ___ бизнисмен. Она ___ програмерка. Ми ___ менаџери. Ви ___ политичари. Они ___ зубари. Оне ___ фризерке. Драган ___ ветеринар, Јелена ___ новинар. Џон ___ лекар.</p><h3>Упражнение 3</h3><p><b>а)</b> Ви ___ програмер? — Не, ја ___ менаџер. Програмер ___ у следећем кабинету. Ја ___ Мила, ваш нови правник. Драго ми ___. Ја ___ Стефан.<br /><br /><b>б)</b> Ја ___ ваша нова учитељица Ана. Ја ___ Милан. Ја ___ Љубица. Драго ми ___. Ви ___ из Београда? Да, ми ___ из Београда. Наши родитељи ___ из Русије, они ___ из Москве.</p></article>
+        <Feedback section="homework" />
       </section>
       <section id="recap" data-lesson-section hidden={active !== 9}>
         <div className="no">09 · ЗАВРШЕТАК</div><h2>Шта сада умем?</h2>
@@ -215,6 +271,7 @@ export default function Lesson() {
           const next = [...checks]; next[i] = event.target.checked; setChecks(next); persist(done, next);
         }} />{x}</label>)}</div>
         <button className="finish" onClick={() => { setDone(true); persist(true, checks); }}>{done ? "Лекција је завршена ✓" : "Завершить урок"}</button>
+        <Feedback section="recap" />
       </section>
       <nav className="section-controls" aria-label="Переход между разделами"><button disabled={active === 0} onClick={() => openSection(active - 1)}>Назад</button><span>{active + 1} / {sections.length}</span><button disabled={active === sections.length - 1} onClick={() => openSection(active + 1)}>Далее</button></nav>
       <footer><b>TY SERB</b><span>Лекција 02 · Лидија Симић</span></footer>

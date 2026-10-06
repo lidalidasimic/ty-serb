@@ -2,11 +2,11 @@
 [data-lesson-two] * { box-sizing: border-box; letter-spacing: 0; }
 [data-lesson-two] { scroll-behavior: smooth; }
 [data-lesson-two] { margin: 0; background: var(--bg); color: var(--ink); font-family: Arial, Helvetica, sans-serif; font-size: 17px; line-height: 1.65; }
-[data-lesson-two] button, [data-lesson-two] select, [data-lesson-two] input { font: inherit; }
+[data-lesson-two] button, [data-lesson-two] select, [data-lesson-two] input, [data-lesson-two] textarea { font: inherit; }
 [data-lesson-two] button, [data-lesson-two] a, [data-lesson-two] select { -webkit-tap-highlight-color: transparent; }
 [data-lesson-two] button, [data-lesson-two] select { cursor: pointer; }
 [data-lesson-two] a { color: var(--b); }
-[data-lesson-two] button:focus-visible, [data-lesson-two] a:focus-visible, [data-lesson-two] select:focus-visible, [data-lesson-two] input:focus-visible, [data-lesson-two] audio:focus-visible { outline: 3px solid var(--b); outline-offset: 4px; }
+[data-lesson-two] button:focus-visible, [data-lesson-two] a:focus-visible, [data-lesson-two] select:focus-visible, [data-lesson-two] input:focus-visible, [data-lesson-two] textarea:focus-visible, [data-lesson-two] audio:focus-visible { outline: 3px solid var(--b); outline-offset: 4px; }
 [data-lesson-two] p { margin: 14px 0; }
 [data-lesson-two] h1, [data-lesson-two] h2, [data-lesson-two] h3 { font-weight: 900; line-height: 1.2; overflow-wrap: anywhere; }
 [data-lesson-two] h1 { font-size: 40px; margin: 18px 0 20px; }
@@ -103,6 +103,17 @@
 [data-lesson-two] .section-controls button { min-height: 48px; padding: 10px 18px; border: 2px solid var(--ink); border-radius: 8px; background: var(--b); color: white; font-size: 16px; font-weight: 900; box-shadow: 3px 3px 0 var(--ink); }
 [data-lesson-two] .section-controls button:first-child { background: white; color: var(--ink); }
 [data-lesson-two] .section-controls button:disabled { opacity: .4; cursor: default; box-shadow: none; }
+[data-lesson-two] .feedback { margin-top: 36px; padding: 20px; border: 2px solid var(--ink); border-radius: 8px; background: #eff6ff; box-shadow: 3px 3px 0 var(--ink); }
+[data-lesson-two] .feedback h3 { margin: 0 0 8px; font-size: 21px; }
+[data-lesson-two] .feedback-prompt { margin: 0; font-size: 15px; color: var(--mut); }
+[data-lesson-two] .feedback label { display: block; margin: 16px 0 6px; font-size: 14px; font-weight: 700; }
+[data-lesson-two] .feedback input, [data-lesson-two] .feedback textarea { display: block; width: 100%; min-width: 0; padding: 10px 12px; border: 2px solid var(--ink); border-radius: 6px; background: white; color: var(--ink); font-size: 16px; line-height: 1.5; }
+[data-lesson-two] .feedback textarea { min-height: 128px; resize: vertical; }
+[data-lesson-two] .feedback button { min-height: 48px; margin-top: 16px; padding: 10px 20px; border: 2px solid var(--ink); border-radius: 8px; background: var(--b); color: white; font-size: 16px; font-weight: 900; }
+[data-lesson-two] .feedback button:disabled { cursor: wait; opacity: .6; }
+[data-lesson-two] .feedback [role=status], [data-lesson-two] .feedback [role=alert] { margin: 14px 0 0; font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+[data-lesson-two] .feedback [role=status] { color: #166534; }
+[data-lesson-two] .feedback [role=alert] { color: var(--r); }
 [data-lesson-two] footer { display: flex; justify-content: space-between; gap: 16px; padding: 26px 0; border-top: 2px solid var(--ink); font-size: 13px; }
 [data-lesson-two] footer b { color: var(--r); font-size: 18px; }
 @media (max-width: 600px) {

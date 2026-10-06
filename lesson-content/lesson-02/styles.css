@@ -2,11 +2,11 @@
 * { box-sizing: border-box; letter-spacing: 0; }
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: Arial, Helvetica, sans-serif; font-size: 17px; line-height: 1.65; }
-button, select, input { font: inherit; }
+button, select, input, textarea { font: inherit; }
 button, a, select { -webkit-tap-highlight-color: transparent; }
 button, select { cursor: pointer; }
 a { color: var(--b); }
-button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, audio:focus-visible { outline: 3px solid var(--b); outline-offset: 4px; }
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, audio:focus-visible { outline: 3px solid var(--b); outline-offset: 4px; }
 p { margin: 14px 0; }
 h1, h2, h3 { font-weight: 900; line-height: 1.2; overflow-wrap: anywhere; }
 h1 { font-size: 40px; margin: 18px 0 20px; }
@@ -103,6 +103,17 @@ mark { padding: 2px 4px; border-radius: 3px; background: #ffe0e2; color: #891c21
 .section-controls button { min-height: 48px; padding: 10px 18px; border: 2px solid var(--ink); border-radius: 8px; background: var(--b); color: white; font-size: 16px; font-weight: 900; box-shadow: 3px 3px 0 var(--ink); }
 .section-controls button:first-child { background: white; color: var(--ink); }
 .section-controls button:disabled { opacity: .4; cursor: default; box-shadow: none; }
+.feedback { margin-top: 36px; padding: 20px; border: 2px solid var(--ink); border-radius: 8px; background: #eff6ff; box-shadow: 3px 3px 0 var(--ink); }
+.feedback h3 { margin: 0 0 8px; font-size: 21px; }
+.feedback-prompt { margin: 0; font-size: 15px; color: var(--mut); }
+.feedback label { display: block; margin: 16px 0 6px; font-size: 14px; font-weight: 700; }
+.feedback input, .feedback textarea { display: block; width: 100%; min-width: 0; padding: 10px 12px; border: 2px solid var(--ink); border-radius: 6px; background: white; color: var(--ink); font-size: 16px; line-height: 1.5; }
+.feedback textarea { min-height: 128px; resize: vertical; }
+.feedback button { min-height: 48px; margin-top: 16px; padding: 10px 20px; border: 2px solid var(--ink); border-radius: 8px; background: var(--b); color: white; font-size: 16px; font-weight: 900; }
+.feedback button:disabled { cursor: wait; opacity: .6; }
+.feedback [role=status], .feedback [role=alert] { margin: 14px 0 0; font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+.feedback [role=status] { color: #166534; }
+.feedback [role=alert] { color: var(--r); }
 footer { display: flex; justify-content: space-between; gap: 16px; padding: 26px 0; border-top: 2px solid var(--ink); font-size: 13px; }
 footer b { color: var(--r); font-size: 18px; }
 @media (max-width: 600px) {
