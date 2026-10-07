@@ -189,8 +189,8 @@ test("approved students receive lesson 11 assets only from its private folder", 
   assert.equal((await createRoute({ accessStatus: "approved" }, true, lessonElevenSlug).get(["index.html"])).status, 404);
 });
 
-test("lesson 11 opens directly in the course page only for approved students", async () => {
-  for (const user of [null, { id: "student", accessStatus: "pending" }, { id: "student", accessStatus: "approved" }]) {
+test("lesson 11 keeps the shared lesson header above its directly mounted content", async () => {
+  for (const user of [null, { id: "student", accessStatus: "pending" }, { id: "student", accessStatus: "approved" }, { id: "admin", isAdmin: true }]) {
     const page = loadModule("app/lessons/[slug]/page.tsx", {
       "next/link": ({ children, ...props }) => React.createElement("a", props, children),
       "next/navigation": { notFound: () => { throw new Error("Not found"); } },
@@ -208,13 +208,22 @@ test("lesson 11 opens directly in the course page only for approved students", a
     });
     const html = renderToStaticMarkup(await page.default({ params: Promise.resolve({ slug: lessonElevenSlug }) }));
     const lessonContent = html.indexOf("data-lesson-eleven=");
-    if (user?.accessStatus === "approved") {
-      assert.ok(lessonContent !== -1);
+    if (access.canOpenLesson(user, lessons.getLessonBySlug(lessonElevenSlug))) {
+      assert.ok(lessonContent > html.indexOf("Telegram-пост"));
       assert.doesNotMatch(html, /<iframe/);
-      assert.doesNotMatch(html, /Открыть презентацию|Telegram-пост/);
+      assert.match(html, /<h1[^>]*>Лекция 11\. Прилагательные\.<\/h1>/);
+      assert.match(html, /Урок 11 · A1\+/);
+      assert.match(html, /Читаем комикс о пропавших словах/);
+      assert.match(html, /href="\/lessons"[^>]*>[\s\S]*?Все уроки/);
+      assert.match(html, /href="\/lessons\/ucimo-srpski-10"[\s\S]*?Предыдущая лекция/);
+      assert.match(html, /href="\/lessons\/ucimo-srpski-12"[\s\S]*?Следующая лекция/);
+      assert.match(html, /href="\/api\/materials\/ucimo-srpski-11\/gamma"[\s\S]*?Открыть презентацию/);
+      assert.match(html, /href="\/api\/materials\/ucimo-srpski-11\/telegram"[\s\S]*?Telegram-пост/);
+      assert.match(html, /aria-disabled="true"[\s\S]*?PDF worksheet скоро/);
     } else {
       assert.equal(lessonContent, -1);
       assert.match(html, /Доступ к материалам ожидает подтверждения/);
+      assert.doesNotMatch(html, /Открыть презентацию|Telegram-пост/);
     }
   }
 });

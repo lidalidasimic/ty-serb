@@ -103,10 +103,6 @@ export default async function LessonPage({ params }: LessonPageProps) {
     return <LessonEighteenExperience />;
   }
 
-  if (lesson.number === 11) {
-    return <LessonElevenExperience />;
-  }
-
   const isReady = lesson.status === "готово";
   const hasWorksheet = lesson.worksheetLink.trim().length > 0;
   const currentLessonIndex = lessons.findIndex((item) => item.slug === lesson.slug);
@@ -219,6 +215,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
       {lesson.number === 2 ? <LessonTwoExperience /> : null}
       {lesson.number === 3 ? <LessonThreeExperience /> : null}
       {lesson.number === 4 ? <LessonFourExperience /> : null}
+      {lesson.number === 11 ? <LessonElevenExperience /> : null}
       {lesson.number === 1 ? (
         <>
           <section className="bg-[#f8f1e7] px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
