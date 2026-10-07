@@ -51,7 +51,8 @@ function isAllowedFile(lessonNumber: number, file: string) {
     return ["index.html", "styles.css", "lesson.js", "question-reference.png"].includes(file);
   }
   if (lessonNumber === 11) {
-    return ["index.html", "styles.css", "embedded.css", "lesson.js", "comic.png"].includes(file);
+    return ["index.html", "styles.css", "embedded.css", "lesson.js", "comic.png"].includes(file)
+      || /^audio\/section-0[1-8]\.(?:mp3|wav|ogg|m4a|webm)$/.test(file);
   }
   if (lessonNumber === 3) {
     return ["index.html", "styles.css", "lesson.js", "comic.png"].includes(file)

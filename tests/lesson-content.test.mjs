@@ -145,6 +145,14 @@ test("lesson 4 protects every file before reading it", async () => {
 
 const lessonElevenSlug = "ucimo-srpski-11";
 const lessonElevenFiles = ["index.html", "styles.css", "embedded.css", "lesson.js", "comic.png"];
+const lessonElevenAudio = Array.from({ length: 8 }, (_, i) => `audio/section-0${i + 1}.m4a`);
+const elevenWorkflow = loadModule("lesson-content/lesson-11/workflow.ts");
+function loadLessonEleven() {
+  return loadModule("lesson-content/lesson-11/Lesson.tsx", {
+    "./workflow": elevenWorkflow,
+    "./LessonTools": loadModule("lesson-content/lesson-11/LessonTools.tsx", { "./workflow": elevenWorkflow }),
+  });
+}
 
 test("lesson 19 opens as the course experience only after the access check", async () => {
   const slug = "polinin-rodjendan";
@@ -326,22 +334,85 @@ test("lesson 4 retains original media, complete homework and eight empty audio p
   assert.doesNotMatch(html, /site-header|ty-serb-lesson-four.*chatgpt\.site/);
 });
 
-test("lesson 11 embeds the two requested LearningApps at the end", () => {
-  const lesson = loadModule("lesson-content/lesson-11/Lesson.tsx").default;
-  const html = renderToStaticMarkup(React.createElement(lesson));
-  assert.equal((html.match(/<iframe /g) || []).length, 2);
+test("lesson 11 loads the two requested LearningApps only in their final step", () => {
+  const module = loadLessonEleven();
+  const html = renderToStaticMarkup(React.createElement(module.default));
+  assert.doesNotMatch(html, /<iframe /);
   for (const id of ["pe514bjca26", "ppi7p6qnj26"]) {
-    const frame = html.indexOf(`src="https://learningapps.org/watch?v=${id}"`);
-    assert.ok(frame > html.indexOf('id="homework"'));
-    assert.ok(html.includes(`href="https://learningapps.org/watch?id=${id}"`));
+    const link = html.indexOf(`href="https://learningapps.org/watch?id=${id}"`);
+    assert.ok(link > html.indexOf('id="homework"'));
+    const props = { id, title: id, description: "", active: true };
+    const frame = renderToStaticMarkup(React.createElement(module.LearningApp, props));
+    assert.match(frame, new RegExp(`src="https://learningapps.org/watch\\?v=${id}"`));
+    assert.doesNotMatch(renderToStaticMarkup(React.createElement(module.LearningApp, { ...props, active: false })), /<iframe/);
   }
   assert.doesNotMatch(html, /pyj65zkf326|pezs2mbpa26/);
   assert.match(html, /src="\/api\/lesson-content\/ucimo-srpski-11\/comic\.png"/);
-  assert.doesNotMatch(html, /<main|<header|<footer/);
+  assert.doesNotMatch(html, /<main|<header|<footer|<h1/);
   assert.match(html, /href="\/lessons\/ucimo-srpski-10"/);
   assert.match(html, /href="\/lessons\/ucimo-srpski-12"/);
   assert.match(html, /href="\/api\/materials\/ucimo-srpski-11\/gamma"/);
   assert.match(html, /href="\/api\/materials\/ucimo-srpski-11\/telegram"/);
+});
+
+test("lesson 11 starts with one visible step, eight audio slots and feedback forms", () => {
+  const html = renderToStaticMarkup(React.createElement(loadLessonEleven().default));
+  const sections = html.match(/<section\b[^>]*data-lesson-step[^>]*>/g) || [];
+  assert.equal(sections.length, 8);
+  assert.equal(sections.filter(section => !/\bhidden=/.test(section)).length, 1);
+  assert.match(sections.find(section => !/\bhidden=/.test(section)), /id="intro"/);
+  assert.equal((html.match(/data-lesson-audio=/g) || []).length, 8);
+  assert.equal((html.match(/<audio\b/g) || []).length, 8);
+  assert.doesNotMatch(html.match(/<audio\b[^>]*>/g).join(""), /src=/);
+  assert.equal((html.match(/Запись ещё не загружена\./g) || []).length, 8);
+  assert.equal((html.match(/data-lesson-feedback=/g) || []).length, 8);
+  for (const [id] of elevenWorkflow.steps) {
+    assert.match(html, new RegExp(`data-lesson-feedback="l11-${id}"`));
+    assert.match(html, new RegExp(`for="l11-${id}-message"`));
+  }
+  assert.match(html, /aria-label="Прогресс урока"[^>]*aria-valuenow="0"/);
+  assert.equal((html.match(/id="l11-homework-[0-8]"/g) || []).length, 9);
+  assert.match(html, /Назад/);
+  assert.match(html, /Дальше/);
+  assert.match(html, /Завершить урок/);
+});
+
+test("lesson 11 progress is validated and cannot finish unchecked exercises", () => {
+  const plain = value => JSON.parse(JSON.stringify(value));
+  assert.deepEqual(plain(elevenWorkflow.restoreProgress(null)), { active: "intro", completed: [] });
+  assert.deepEqual(plain(elevenWorkflow.restoreProgress({ active: "missing", completed: ["intro", "missing", "intro", 2, "comic"] })), { active: "intro", completed: ["intro", "comic"] });
+  assert.deepEqual(plain(elevenWorkflow.restoreProgress({ active: "test", completed: "all" })), { active: "test", completed: [] });
+  assert.equal(elevenWorkflow.canCompleteStep("intro", [], {}), true);
+  assert.equal(elevenWorkflow.canCompleteStep("words", [], {}), false);
+  assert.equal(elevenWorkflow.canCompleteStep("words", [], { words: true }), true);
+  assert.equal(elevenWorkflow.canCompleteStep("practice", [], { forms: true }), false);
+  assert.equal(elevenWorkflow.canCompleteStep("practice", [], { forms: true, sentences: true }), true);
+  assert.equal(elevenWorkflow.canCompleteStep("apps", [], {}), false);
+  assert.deepEqual(plain(elevenWorkflow.invalidateExercise(["intro", "words", "practice", "apps"], "forms")), ["intro", "words"]);
+  assert.deepEqual(plain(elevenWorkflow.invalidateExercise(["intro", "comic", "apps"], "comic-words")), ["intro"]);
+  for (const [latin, cyrillic] of [["jak", "јак"], ["LEPA!", "лепа"], ["smešna", "смешна"], ["  чаробно. ", "чаробно"]]) {
+    assert.equal(elevenWorkflow.normalizeAnswer(latin), cyrillic);
+  }
+});
+
+test("lesson 11 future recordings remain private and support audio seeking", async () => {
+  for (const user of [null, { accessStatus: "pending" }, { accessStatus: "revoked" }]) {
+    const route = createRoute(user, false, lessonElevenSlug);
+    for (const file of lessonElevenAudio) assert.equal((await route.get(file.split("/"))).status, user ? 403 : 401);
+    assert.equal(route.calls.reads, 0);
+  }
+  const route = createRoute({ accessStatus: "approved" }, false, lessonElevenSlug);
+  for (const file of lessonElevenAudio) {
+    const response = await route.get(file.split("/"), "bytes=2-5");
+    assert.equal(response.status, 206);
+    assert.equal(response.headers.get("content-type"), "audio/mp4");
+    assert.equal(response.headers.get("cache-control"), "private, no-store");
+    assert.equal(await response.text(), "2345");
+  }
+  for (const file of ["audio/section-00.m4a", "audio/section-09.m4a", "audio/other.m4a", "audio/section-01.exe", "audio/../section-01.m4a"]) {
+    assert.equal((await route.get(file.split("/"))).status, 404);
+  }
+  assert.equal((await createRoute({ accessStatus: "approved" }, true, lessonElevenSlug).get(["audio", "section-01.m4a"])).status, 404);
 });
 
 test("lesson 11 styles stay inside the protected course experience", async () => {
@@ -434,11 +505,13 @@ test("lesson 3 appears below existing materials only for approved students", asy
   }
 });
 
-function createFeedbackRoute(fail = false) {
+function createFeedbackRoute(fail = false, user = null) {
   const submissions = [];
   const route = loadModule("app/api/lesson-feedback/route.ts", {
+    "@/data/lessons": lessons,
+    "@/lib/access-control": access,
     "@/lib/supabase-server": {
-      getCurrentUser: async () => null,
+      getCurrentUser: async () => user,
       listApprovedLessonFeedback: async () => [],
       saveLessonFeedback: async (entry) => { if (fail) throw new Error("private database failure"); submissions.push(entry); },
     },
@@ -448,6 +521,58 @@ function createFeedbackRoute(fail = false) {
   }));
   return { route, submissions, submit };
 }
+
+test("lesson 11 feedback accepts every step only for approved students or admins", async () => {
+  for (const user of [null, { accessStatus: "pending" }, { accessStatus: "revoked" }]) {
+    const route = createFeedbackRoute(false, user);
+    const response = await route.submit({ lessonSlug: lessonElevenSlug, section: "l11-intro", message: "Вопрос" }, "https://ty-serb.vercel.app");
+    assert.equal(response.status, user ? 403 : 401);
+    assert.equal(route.submissions.length, 0);
+  }
+  for (const user of [{ id: "student", accessStatus: "approved" }, { id: "teacher", isAdmin: true }]) {
+    for (const [id] of elevenWorkflow.steps) {
+      const route = createFeedbackRoute(false, user);
+      const response = await route.submit({ lessonSlug: lessonElevenSlug, section: `l11-${id}`, name: " Лида ", message: " Вопрос " }, "https://ty-serb.vercel.app");
+      assert.equal(response.status, 200);
+      assert.equal((await response.json()).ok, true);
+      assert.equal(route.submissions[0].userId, user.id);
+      assert.equal(route.submissions[0].section, `l11-${id}`);
+      assert.equal(route.submissions[0].lessonSlug, lessonElevenSlug);
+      assert.equal(route.submissions[0].message, "Вопрос");
+      assert.equal((await route.submit({ lessonSlug: lessonElevenSlug, section: `l11-${id}`, message: "Ещё вопрос" }, "https://ty-serb.vercel.app")).status, 429);
+    }
+  }
+});
+
+test("lesson 11 feedback rejects invalid sections and reports storage failures", async () => {
+  const user = { id: "student", accessStatus: "approved" };
+  const invalid = createFeedbackRoute(false, user);
+  for (const extra of [{ section: "l11-missing" }, { section: "l3-comic" }, { message: " " }, { kind: "introduction" }]) {
+    assert.equal((await invalid.submit({ lessonSlug: lessonElevenSlug, section: "l11-intro", message: "Вопрос", ...extra }, "https://ty-serb.vercel.app")).status, 400);
+  }
+  assert.equal((await invalid.submit({ lessonSlug: lessonElevenSlug, section: "l11-intro", message: "Вопрос" }, "https://unrelated.example")).status, 403);
+  assert.equal(invalid.submissions.length, 0);
+  const failed = await createFeedbackRoute(true, user).submit({ lessonSlug: lessonElevenSlug, section: "l11-intro", message: "Вопрос" }, "https://ty-serb.vercel.app");
+  assert.equal(failed.status, 500);
+  assert.doesNotMatch(await failed.text(), /private database failure|"ok":true/);
+});
+
+test("lesson 11 feedback reaches the existing teacher moderation panel", async () => {
+  const route = createFeedbackRoute(false, { id: "student", accessStatus: "approved" });
+  await route.submit({ lessonSlug: lessonElevenSlug, section: "l11-grammar", message: "Вопрос о прилагательных" }, "https://ty-serb.vercel.app");
+  const entry = route.submissions[0];
+  const { default: AdminPage } = loadModule("app/admin/page.tsx", {
+    "@/app/admin/actions": { moderateFeedbackAction() {}, updateAccessStatusAction() {} },
+    "@/lib/supabase-server": {
+      requireAdmin: async () => {}, listProfiles: async () => [],
+      listRecentActivity: async () => [{ id: "feedback-11", user_id: entry.userId, lesson_slug: entry.lessonSlug, created_at: "2026-10-08T10:00:00Z", action_type: `lesson_feedback_pending:${JSON.stringify(entry)}` }],
+    },
+  });
+  const html = renderToStaticMarkup(await AdminPage({}));
+  assert.match(html, /l11-grammar/);
+  assert.match(html, /Вопрос о прилагательных/);
+  assert.match(html, /ожидает проверки/);
+});
 
 test("lesson 19 sends each section to the existing teacher feedback channel", async () => {
   const slug = "polinin-rodjendan";

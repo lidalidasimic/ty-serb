@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, ExternalLink } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CircleCheck, ExternalLink, RotateCcw } from "lucide-react";
+import { Audio, Feedback } from "./LessonTools";
+import { canCompleteStep, invalidateExercise, isStep, normalizeAnswer, progressKey, restoreProgress, steps, type StepId } from "./workflow";
 
 const comic = "/api/lesson-content/ucimo-srpski-11/comic.png";
 
@@ -47,34 +49,31 @@ const adjectiveRows = [
   ["црвен", "црвена", "црвено"],
 ];
 
-const lessonRoute = [
-  ["01", "Слова", "#words"],
-  ["02", "Комикс", "#comic"],
-  ["03", "Грамматика", "#grammar"],
-  ["04", "Практика", "#practice"],
-  ["05", "Мини-тест", "#test"],
-  ["06", "Домашнее", "#homework"],
-  ["07", "LearningApps", "#apps"],
-];
-
 function Section({
   id,
   eyebrow,
   title,
   children,
   tone = "cream",
+  active,
+  ending,
 }: {
-  id: string;
+  id: StepId;
   eyebrow: string;
   title: string;
   children: ReactNode;
   tone?: string;
+  active: StepId;
+  ending: ReactNode;
 }) {
   return (
-    <section id={id} className={`section tone-${tone}`}>
+    <section id={id} data-lesson-step={id} hidden={active !== id} className={`section tone-${tone}`}>
       <p className="eyebrow">{eyebrow}</p>
-      <h2>{title}</h2>
+      <h2 tabIndex={-1}>{title}</h2>
+      <Audio step={id} />
       {children}
+      {ending}
+      <Feedback step={id} />
     </section>
   );
 }
@@ -83,11 +82,11 @@ function CheckButton({ onClick, reset }: { onClick: () => void; reset?: () => vo
   return (
     <div className="actions">
       <button type="button" className="primary" onClick={onClick}>
-        Проверить
+        <Check size={18} aria-hidden />Проверить
       </button>
       {reset && (
         <button type="button" className="secondary" onClick={reset}>
-          Попробовать ещё раз
+          <RotateCcw size={18} aria-hidden />Повторить
         </button>
       )}
     </div>
@@ -99,7 +98,7 @@ const comicTranslations = ["собака", "разноцветный", "сумк
 
 type MatchLine = { word: string; translation: string; x1: number; y1: number; x2: number; y2: number };
 
-function WordMatch({ items, translations, label }: { items: string[][]; translations: string[]; label: string }) {
+function WordMatch({ items, translations, label, onComplete }: { items: string[][]; translations: string[]; label: string; onComplete: (done: boolean) => void }) {
   const [left, setLeft] = useState<string | null>(null);
   const [right, setRight] = useState<string | null>(null);
   const [pairs, setPairs] = useState<Record<string, string>>({});
@@ -140,6 +139,7 @@ function WordMatch({ items, translations, label }: { items: string[][]; translat
     setLeft(null);
     setRight(null);
     setChecked(false);
+    onComplete(false);
     setStatus(`${word} — ${translation}`);
   };
   const pairClass = (word: string) => pairs[word]
@@ -200,12 +200,13 @@ function WordMatch({ items, translations, label }: { items: string[][]; translat
       </div>
       <p className="match-status" aria-live="polite">{status}</p>
       <CheckButton
-        onClick={() => setChecked(true)}
+        onClick={() => { setChecked(true); onComplete(items.every(([a, b]) => pairs[a] === b)); }}
         reset={() => {
           setPairs({});
           setLeft(null);
           setRight(null);
           setChecked(false);
+          onComplete(false);
           setStatus("Все пары сброшены.");
         }}
       />
@@ -218,7 +219,7 @@ function WordMatch({ items, translations, label }: { items: string[][]; translat
   );
 }
 
-function SelectExercise() {
+function SelectExercise({ onComplete }: { onComplete: (done: boolean) => void }) {
   const qs = [
     ["Ова мачка је", ["леп", "лепа", "лепо"], "лепа"],
     ["Овај коњ је", ["јак", "јака", "јако"], "јак"],
@@ -238,9 +239,11 @@ function SelectExercise() {
               <button
                 type="button"
                 key={value}
+                aria-pressed={answers[index] === value}
                 onClick={() => {
                   setAnswers((current) => ({ ...current, [index]: value }));
                   setChecked(false);
+                  onComplete(false);
                 }}
                 className={`${answers[index] === value ? "active" : ""} ${
                   checked && answers[index] === value ? (value === q[2] ? "correct" : "wrong") : ""
@@ -254,17 +257,19 @@ function SelectExercise() {
         </div>
       ))}
       <CheckButton
-        onClick={() => setChecked(true)}
+        onClick={() => { setChecked(true); onComplete(qs.every((q, index) => answers[index] === q[2])); }}
         reset={() => {
           setAnswers({});
           setChecked(false);
+          onComplete(false);
         }}
       />
+      {checked && <p className="feedback" role="status">Правильно: {qs.filter((q, index) => answers[index] === q[2]).length} из {qs.length}.</p>}
     </div>
   );
 }
 
-function FillExercise() {
+function FillExercise({ onComplete }: { onComplete: (done: boolean) => void }) {
   const qs = [
     ["Коцкослав је", "коњ.", "јак"],
     ["Јасмина је", "мачка.", "лепа"],
@@ -279,7 +284,7 @@ function FillExercise() {
     <div className="exercise">
       <p className="instruction">Впиши подходящее прилагательное из комикса.</p>
       {qs.map((q, index) => {
-        const isCorrect = (answers[index] || "").trim().toLowerCase() === q[2];
+        const isCorrect = normalizeAnswer(answers[index] || "") === q[2];
         return (
           <label className="fill" key={q[0]}>
             <span>{q[0]}</span>
@@ -288,6 +293,7 @@ function FillExercise() {
               onChange={(event) => {
                 setAnswers((current) => ({ ...current, [index]: event.target.value }));
                 setChecked(false);
+                onComplete(false);
               }}
               aria-label={`${q[0]} пропуск`}
             />
@@ -297,17 +303,19 @@ function FillExercise() {
         );
       })}
       <CheckButton
-        onClick={() => setChecked(true)}
+        onClick={() => { setChecked(true); onComplete(qs.every((q, index) => normalizeAnswer(answers[index] || "") === q[2])); }}
         reset={() => {
           setAnswers({});
           setChecked(false);
+          onComplete(false);
         }}
       />
+      {checked && <p className="feedback" role="status">Правильно: {qs.filter((q, index) => normalizeAnswer(answers[index] || "") === q[2]).length} из {qs.length}.</p>}
     </div>
   );
 }
 
-function MiniTest() {
+function MiniTest({ onComplete }: { onComplete: (done: boolean) => void }) {
   const qs = [
     { q: "Что украли в истории?", o: ["боје", "придеве", "имена"], a: "придеве" },
     { q: "Как Полина описала Коцкослава?", o: ["Коцкослав је јак.", "Коцкослав је јака.", "Коцкослав је јако."], a: "Коцкослав је јак." },
@@ -330,9 +338,11 @@ function MiniTest() {
               <button
                 type="button"
                 key={value}
+                aria-pressed={answers[index] === value}
                 onClick={() => {
                   setAnswers((current) => ({ ...current, [index]: value }));
                   setDone(false);
+                  onComplete(false);
                 }}
                 className={`${answers[index] === value ? "active" : ""} ${
                   done && answers[index] === value ? (value === q.a ? "correct" : "wrong") : ""
@@ -346,10 +356,11 @@ function MiniTest() {
         </div>
       ))}
       <CheckButton
-        onClick={() => setDone(true)}
+        onClick={() => { setDone(true); onComplete(score === qs.length); }}
         reset={() => {
           setAnswers({});
           setDone(false);
+          onComplete(false);
         }}
       />
       {done && (
@@ -357,7 +368,7 @@ function MiniTest() {
           <span>{score}/{qs.length}</span>
           <p>
             {score === 4
-              ? "Одлично! Урок пройден."
+              ? "Одлично! Мини-тест пройден."
               : score >= 3
                 ? "Очень хорошо! Исправь один ответ."
                 : "Вернись к комиксу и таблице — затем попробуй ещё раз."}
@@ -368,7 +379,34 @@ function MiniTest() {
   );
 }
 
-function LearningApp({ id, title, description }: { id: string; title: string; description: string }) {
+function Homework() {
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [ready, setReady] = useState(false);
+  const key = "ty-serb-lesson-11-homework-v1";
+  const prompts = ["Полина је", "Коцкослав је", "Јасмина је", "Маша је", "Лука је", "Омск је", "Ја сам", "Ја сам", "Ја сам"];
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(key) || "{}");
+      if (saved && typeof saved === "object" && !Array.isArray(saved)) {
+        setAnswers(Object.fromEntries(Object.entries(saved).filter(([id, value]) => /^[0-8]$/.test(id) && typeof value === "string").map(([id, value]) => [id, (value as string).slice(0, 500)])));
+      }
+    } catch { /* Drafts are optional when browser storage is unavailable. */ }
+    setReady(true);
+  }, []);
+  useEffect(() => {
+    if (ready) try { localStorage.setItem(key, JSON.stringify(answers)); } catch { /* Storage may be disabled. */ }
+  }, [answers, ready]);
+  return <div className="homework-writing">
+    {prompts.map((prompt, index) => <div key={index}>
+      {index === 6 && <h3>Бонус: три предложения о себе</h3>}
+      <label htmlFor={`l11-homework-${index}`}>{index < 6 ? index + 1 : index - 5}. {prompt}…</label>
+      <textarea id={`l11-homework-${index}`} rows={2} maxLength={500} lang="sr" value={answers[index] || ""}
+        onChange={event => setAnswers(current => ({ ...current, [index]: event.target.value }))} />
+    </div>)}
+  </div>;
+}
+
+export function LearningApp({ id, title, description, active }: { id: string; title: string; description: string; active: boolean }) {
   const embedUrl = `https://learningapps.org/watch?v=${id}`;
   const watchUrl = `https://learningapps.org/watch?id=${id}`;
 
@@ -384,7 +422,7 @@ function LearningApp({ id, title, description }: { id: string; title: string; de
           Открыть отдельно
         </a>
       </div>
-      <iframe src={embedUrl} title={`${title} — LearningApps`} loading="lazy" allow="autoplay; fullscreen" allowFullScreen />
+      {active && <iframe src={embedUrl} title={`${title} — LearningApps`} loading="lazy" allow="autoplay; fullscreen" allowFullScreen />}
     </article>
   );
 }
@@ -392,90 +430,132 @@ function LearningApp({ id, title, description }: { id: string; title: string; de
 export default function LessonEleven() {
   const lesson = useRef<HTMLDivElement>(null);
   const navigation = useRef<HTMLElement>(null);
-  const content = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState({ progress: 0, active: "top" });
+  const shouldScroll = useRef(false);
+  const [active, setActive] = useState<StepId>("intro");
+  const [completed, setCompleted] = useState<StepId[]>([]);
+  const [passed, setPassed] = useState<Record<string, boolean>>({});
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const element = lesson.current;
-    const bar = navigation.current;
-    const page = content.current;
-    if (!element || !bar || !page) return;
-    let frame = 0;
-    const update = () => {
-      frame = 0;
-      const headerHeight = parseFloat(getComputedStyle(element).getPropertyValue("--lesson-top")) || 0;
-      const navigationHeight = bar.getBoundingClientRect().height;
-      element.style.setProperty("--lesson-nav-height", `${navigationHeight}px`);
-      const box = page.getBoundingClientRect();
-      const start = window.scrollY + box.top - headerHeight - navigationHeight;
-      const end = window.scrollY + box.bottom - window.innerHeight;
-      const progress = Math.round(Math.max(0, Math.min(1, (window.scrollY - start) / Math.max(1, end - start))) * 100);
-      let active = "top";
-      for (const [, , href] of lessonRoute) {
-        if ((element.querySelector(href)?.getBoundingClientRect().top ?? Infinity) <= headerHeight + navigationHeight + 48) {
-          active = href.slice(1);
-        }
-      }
-      setPosition(current => current.progress === progress && current.active === active ? current : { progress, active });
+    try {
+      const saved = restoreProgress(JSON.parse(localStorage.getItem(progressKey) || "{}"));
+      setActive(saved.active);
+      setCompleted(saved.completed);
+    } catch { /* Progress is optional when browser storage is unavailable. */ }
+    const hash = location.hash.slice(1);
+    if (isStep(hash)) { setActive(hash); shouldScroll.current = true; }
+    const fromHistory = () => {
+      const id = location.hash.slice(1);
+      setActive(isStep(id) ? id : "intro");
+      shouldScroll.current = true;
     };
-    const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
-    const observer = new ResizeObserver(schedule);
-    observer.observe(page);
-    observer.observe(bar);
-    window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule);
-    const target = document.getElementById(location.hash.slice(1));
-    if (target && element.contains(target)) target.scrollIntoView();
-    schedule();
+    addEventListener("hashchange", fromHistory);
+    addEventListener("popstate", fromHistory);
+    setReady(true);
     return () => {
-      observer.disconnect();
-      window.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
-      cancelAnimationFrame(frame);
+      removeEventListener("hashchange", fromHistory);
+      removeEventListener("popstate", fromHistory);
     };
   }, []);
 
+  useEffect(() => {
+    if (ready) try { localStorage.setItem(progressKey, JSON.stringify({ active, completed })); } catch { /* Storage may be disabled. */ }
+  }, [active, completed, ready]);
+
+  useLayoutEffect(() => {
+    const bar = navigation.current;
+    if (!bar) return;
+    const measure = () => lesson.current?.style.setProperty("--lesson-nav-height", `${bar.getBoundingClientRect().height}px`);
+    const observer = new ResizeObserver(measure);
+    observer.observe(bar);
+    measure();
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    lesson.current?.querySelectorAll("audio").forEach(audio => audio.pause());
+    if (!ready || !shouldScroll.current) return;
+    shouldScroll.current = false;
+    lesson.current?.scrollIntoView({ block: "start", behavior: "instant" });
+    lesson.current?.querySelector<HTMLElement>(`[data-lesson-step="${active}"] h2`)?.focus({ preventScroll: true });
+  }, [active, ready]);
+
+  const jump = (id: StepId) => {
+    if (id === active) return;
+    shouldScroll.current = true;
+    history.pushState(null, "", `#${id}`);
+    setActive(id);
+  };
+  const report = (exercise: string, done: boolean) => {
+    setPassed(current => ({ ...current, [exercise]: done }));
+    if (!done) setCompleted(current => invalidateExercise(current, exercise));
+  };
+  const index = steps.findIndex(([id]) => id === active);
+  const progress = Math.round(completed.length / steps.length * 100);
+  const finished = completed.length === steps.length;
+  const ending = (id: StepId) => {
+    const number = steps.findIndex(([key]) => key === id);
+    const canComplete = canCompleteStep(id, completed, passed);
+    const remaining = steps.filter(([key]) => key !== "apps" && !completed.includes(key));
+    return <div className="step-ending">
+      {id === "apps" && remaining.length > 0 && <div className="remaining-steps">
+        <p>Ещё не завершены:</p>
+        {remaining.map(([key, title]) => <button type="button" className="secondary" key={key} onClick={() => jump(key)}>{title}</button>)}
+      </div>}
+      <div className="step-actions">
+        <button type="button" className="secondary" disabled={number === 0} onClick={() => jump(steps[number - 1][0])}>
+          <ArrowLeft size={18} aria-hidden />Назад
+        </button>
+        <span>{completed.includes(id) ? <><CircleCheck size={18} aria-hidden />Шаг завершён</> : `Шаг ${number + 1} из ${steps.length}`}</span>
+        <button type="button" className="primary" disabled={!canComplete || (id === "apps" && (remaining.length > 0 || finished))} onClick={() => {
+          setCompleted(current => current.includes(id) ? current : [...current, id]);
+          if (number < steps.length - 1) jump(steps[number + 1][0]);
+        }}>
+          {id === "apps" ? <><CircleCheck size={18} aria-hidden />{finished ? "Урок завершён" : "Завершить урок"}</> : <>Дальше<ArrowRight size={18} aria-hidden /></>}
+        </button>
+      </div>
+      {!canComplete && <p className="step-hint" role="status">{id === "apps" ? "Тренировки ещё не отмечены как выполненные." : "Задания ещё не проверены или есть ошибки."}</p>}
+      {id === "apps" && finished && <div className="completion" role="status"><CircleCheck size={28} aria-hidden /><h3>Браво! Лекция 11 завершена.</h3></div>}
+    </div>;
+  };
+
   return (
-    <div className="lesson-experience" ref={lesson}>
+    <div className="lesson-experience" ref={lesson} aria-busy={!ready}>
       <nav className="lesson-navigation" aria-label="Разделы урока 11" ref={navigation}>
         <div className="lesson-navigation-inner">
           <div className="lesson-progress-meta">
-            <a href="#top">Урок 11</a>
-            <span>{position.progress}%</span>
+            <b>TY SERB · ЛЕКЦИЯ 11</b>
+            <span>{completed.length}/{steps.length} · {progress}%</span>
           </div>
           <div className="lesson-section-links">
-            {lessonRoute.map(([number, label, href]) => (
-              <a key={number} href={href} aria-current={position.active === href.slice(1) ? "location" : undefined}>
-                {label}
-              </a>
+            {steps.map(([id, label], number) => (
+              <button type="button" key={id} onClick={() => jump(id)} title={label}
+                aria-label={`Шаг ${number + 1}: ${label}${completed.includes(id) ? ", завершён" : ""}`}
+                aria-current={active === id ? "step" : undefined} className={completed.includes(id) ? "done" : ""}>
+                {String(number + 1).padStart(2, "0")}
+              </button>
             ))}
           </div>
         </div>
-        <div className="lesson-progress-track" role="progressbar" aria-label="Прогресс чтения урока" aria-valuemin={0} aria-valuemax={100} aria-valuenow={position.progress}>
-          <div style={{ width: `${position.progress}%` }} />
+        <div className="step-caption"><span>{steps[index][1]}</span><span>Шаг {index + 1} из {steps.length}</span></div>
+        <div className="lesson-progress-track" role="progressbar" aria-label="Прогресс урока" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
+          <div style={{ width: `${progress}%` }} />
         </div>
       </nav>
 
-      <div id="top" className="page" ref={content}>
-        <section className="hero">
+      <div className="page">
+        <section id="intro" data-lesson-step="intro" hidden={active !== "intro"} className="intro-step">
+        <div className="hero">
           <div>
             <p className="badge">ЛЕКЦИЯ 11 · A1+</p>
-            <h1>
+            <h2 tabIndex={-1}>
               Прилагательные.
               <br />
               <em>Пропавшие слова</em>
-            </h1>
+            </h2>
             <p className="lead">
               Научимся описывать людей, животных и места, согласовывая прилагательные в мужском, женском и среднем роде.
             </p>
-            <div className="hero-actions">
-              <a className="primary start" href="#contents">
-                Начать урок ↓
-              </a>
-              <a className="secondary start" href="/lessons">
-                Каталог курса
-              </a>
-            </div>
           </div>
           <div className="hero-card" aria-label="Примеры вопросов к прилагательным">
             <span className="spark">✦</span>
@@ -484,20 +564,13 @@ export default function LessonEleven() {
             <p>Какво?</p>
             <b>леп · лепа · лепо</b>
           </div>
+        </div>
+        <Audio step="intro" />
+        {ending("intro")}
+        <Feedback step="intro" />
         </section>
 
-        <Section id="contents" eyebrow="Маршрут" title="Что будет в уроке" tone="yellow">
-          <div className="contents">
-            {lessonRoute.map(([number, label, href]) => (
-              <a key={number} href={href}>
-                <b>{number}</b>
-                <span>{label}</span>
-              </a>
-            ))}
-          </div>
-        </Section>
-
-        <Section id="words" eyebrow="Словарь" title="Новые слова">
+        <Section id="words" active={active} ending={ending("words")} eyebrow="Словарь" title="Новые слова">
           <div className="vocab">
             {words.map(([sr, ru]) => (
               <div key={sr}>
@@ -507,10 +580,10 @@ export default function LessonEleven() {
             ))}
           </div>
           <h3>Соедини слова с переводами</h3>
-          <WordMatch items={words} translations={wordTranslations} label="Слова и переводы" />
+          <WordMatch items={words} translations={wordTranslations} label="Слова и переводы" onComplete={done => report("words", done)} />
         </Section>
 
-        <Section id="comic" eyebrow="Читаем" title="Стрип: Ко је украо придеве?" tone="blue">
+        <Section id="comic" active={active} ending={ending("comic")} eyebrow="Читаем" title="Стрип: Ко је украо придеве?" tone="blue">
           <p className="intro">
             В Омске исчезли прилагательные — без них мир стал серым. Прочитай комикс и узнай, как Полина и друзья их
             вернули.
@@ -532,11 +605,11 @@ export default function LessonEleven() {
               ))}
             </div>
             <h3>Соедини слова с переводами</h3>
-            <WordMatch items={comicWords} translations={comicTranslations} label="Слова из комикса и переводы" />
+            <WordMatch items={comicWords} translations={comicTranslations} label="Слова из комикса и переводы" onComplete={done => report("comic-words", done)} />
           </div>
         </Section>
 
-        <Section id="grammar" eyebrow="Правило" title="Три рода прилагательных" tone="red">
+        <Section id="grammar" active={active} ending={ending("grammar")} eyebrow="Правило" title="Три рода прилагательных" tone="red">
           <p className="intro">
             Прилагательное отвечает на вопросы <b>какав?</b>, <b>каква?</b>, <b>какво?</b> и меняет окончание вместе с
             существительным.
@@ -580,29 +653,25 @@ export default function LessonEleven() {
           </div>
         </Section>
 
-        <Section id="practice" eyebrow="Практика" title="Закрепляем формы" tone="yellow">
+        <Section id="practice" active={active} ending={ending("practice")} eyebrow="Практика" title="Закрепляем формы" tone="yellow">
           <h3>А. Повежи са јунаком</h3>
           <p className="intro">
             Вспомни героев: Коцкослав је <b>јак</b>, Јасмина је <b>лепа</b>, Лука је <b>брз</b>, Маша је <b>смешна</b>, а
             Омск је <b>чаробно место</b>.
           </p>
           <h3>Б. Изабери правилно</h3>
-          <SelectExercise />
+          <SelectExercise onComplete={done => report("forms", done)} />
           <h3>В. Допуни реченицу</h3>
-          <FillExercise />
+          <FillExercise onComplete={done => report("sentences", done)} />
         </Section>
 
-        <Section id="test" eyebrow="Финал" title="Мини-тест">
-          <MiniTest />
+        <Section id="test" active={active} ending={ending("test")} eyebrow="Финал" title="Мини-тест">
+          <MiniTest onComplete={done => report("test", done)} />
         </Section>
 
-        <Section id="homework" eyebrow="Домашняя работа" title="Моји јунаци" tone="blue">
+        <Section id="homework" active={active} ending={ending("homework")} eyebrow="Домашняя работа" title="Моји јунаци" tone="blue">
           <p className="intro">Напиши 6 реченица: Полина је… Коцкослав је… Јасмина је… Маша је… Лука је… Омск је…</p>
-          <div className="homework-lines">
-            {[1, 2, 3, 4, 5, 6].map((number) => (
-              <span key={number}>{number}.</span>
-            ))}
-          </div>
+          <Homework />
           <div className="bonus">
             <b>Бонус</b>
             <p>
@@ -611,17 +680,18 @@ export default function LessonEleven() {
           </div>
         </Section>
 
-        <Section id="apps" eyebrow="LearningApps" title="Ещё две тренировки" tone="red">
+        <Section id="apps" active={active} ending={ending("apps")} eyebrow="LearningApps" title="Ещё две тренировки" tone="red">
           <p className="intro">
             Сначала потренируй прилагательные, потом проверь себя в игре.
           </p>
           <div className="learningapps-grid">
-            <LearningApp id="pe514bjca26" title="Pridevi" description="Потренируй формы прилагательных." />
-            <LearningApp id="ppi7p6qnj26" title="MILIONER 15" description="Проверь себя в игре «Миллионер»." />
+            <LearningApp active={active === "apps"} id="pe514bjca26" title="Pridevi" description="Потренируй формы прилагательных." />
+            <LearningApp active={active === "apps"} id="ppi7p6qnj26" title="MILIONER 15" description="Проверь себя в игре «Миллионер»." />
           </div>
+          <label className="apps-complete"><input type="checkbox" checked={passed.apps === true || completed.includes("apps")} onChange={event => report("apps", event.target.checked)} />Я выполнил обе тренировки</label>
         </Section>
 
-        <div className="lesson-footer">
+        <div className="lesson-footer" hidden={active !== "apps"}>
           <div className="lesson-materials">
             <a href="/api/materials/ucimo-srpski-11/gamma" target="_blank" rel="noreferrer"><ExternalLink size={16} aria-hidden="true" />Презентация</a>
             <a href="/api/materials/ucimo-srpski-11/telegram" target="_blank" rel="noreferrer"><ExternalLink size={16} aria-hidden="true" />Telegram</a>
