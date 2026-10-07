@@ -19,6 +19,7 @@ import LessonFourExperience from "@/components/LessonFourExperience";
 import LessonElevenExperience from "@/components/LessonElevenExperience";
 import LessonSeventeenExperience from "@/components/LessonSeventeenExperience";
 import LessonEighteenExperience from "@/components/LessonEighteenExperience";
+import LessonNineteenExperience from "@/components/LessonNineteenExperience";
 
 type LessonPageProps = {
   params: Promise<{
@@ -93,6 +94,10 @@ export default async function LessonPage({ params }: LessonPageProps) {
     lessonSlug: lesson.slug,
     actionType: "lesson_opened",
   });
+
+  if (lesson.number === 19) {
+    return <LessonNineteenExperience />;
+  }
 
   if (lesson.number === 18) {
     return <LessonEighteenExperience />;

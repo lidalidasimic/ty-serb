@@ -330,6 +330,22 @@ export const lessons: Lesson[] = [
     extraNotes:
       "Интерактивный урок с девятью разделами и аудиоплеером в каждом разделе. Аудиозаписи будут добавлены отдельно.",
   },
+  {
+    number: 19,
+    slug: "polinin-rodjendan",
+    title: "Лекция 19. Мисија Ртањ 2. Полинин рођендан.",
+    level: "A1+",
+    topic: "Прошедшее и будущее время, вопросы и отрицания",
+    status: "готово",
+    description: "Приключение на дне рождения Полины: комикс, три времени, вопросы, отрицания, новый текст и первые фразы с дательным падежом.",
+    gammaLink: "https://ty-serb.vercel.app/lessons/polinin-rodjendan#lesson-19-start",
+    homeworkLink: "https://ty-serb.vercel.app/lessons/polinin-rodjendan#lesson-19-start",
+    telegramPostLink: "https://t.me/tyserb",
+    worksheetLink: "",
+    vocabulary: ["рођендан", "поклон", "пећина", "ванземаљац", "благо", "вештица", "фараон", "вратити"],
+    grammarFocus: ["перфекат и футур 1", "вопросы с да ли и ли", "отрицания и отрицательные вопросы", "кому? коме? Полини"],
+    extraNotes: "Полноценный интерактивный урок из 12 разделов. Краткое знакомство с дательным падежом; полная тема продолжается в лекции 20.",
+  },
 ];
 
 export function getLessonBySlug(slug: string) {

@@ -70,6 +70,47 @@ test("lesson 4 protects every file before reading it", async () => {
 const lessonElevenSlug = "ucimo-srpski-11";
 const lessonElevenFiles = ["index.html", "styles.css", "lesson.js", "comic.png"];
 
+test("lesson 19 opens as the course experience only after the access check", async () => {
+  const slug = "polinin-rodjendan";
+  for (const user of [null, { accessStatus: "pending" }, { accessStatus: "approved" }, { isAdmin: true }]) {
+    const page = loadModule("app/lessons/[slug]/page.tsx", {
+      "next/link": ({ children, ...props }) => React.createElement("a", props, children),
+      "next/navigation": { notFound: () => { throw new Error("Not found"); } },
+      "@/data/lessons": lessons,
+      "@/lib/access-control": access,
+      "@/lib/supabase-server": { getCurrentUser: async () => user, logActivity: async () => {} },
+      ...Object.fromEntries(["OneGamma", "Two", "Three", "Four", "Eleven", "Seventeen", "Eighteen"].map(name => [`@/components/Lesson${name}Experience`, () => null])),
+      "@/components/LessonNineteenExperience": loadModule("components/LessonNineteenExperience.tsx").default,
+    });
+    const html = renderToStaticMarkup(await page.default({ params: Promise.resolve({ slug }) }));
+    const authorized = access.canOpenLesson(user, lessons.getLessonBySlug(slug));
+    assert.equal(html.includes(`src="/api/lesson-content/${slug}/index.html"`), authorized);
+    assert.equal(html.includes("Открыть презентацию"), false);
+    if (!authorized) assert.match(html, /Доступ к материалам ожидает подтверждения/);
+  }
+});
+
+test("lesson 19 protects content and all twelve original comic frames", async () => {
+  const slug = "polinin-rodjendan";
+  const files = ["index.html", "styles.css", "lesson.js", "assets/lucide.min.js",
+    ...Array.from({ length: 12 }, (_, i) => `assets/comic-${String(i + 1).padStart(2, "0")}.png`)];
+  for (const user of [null, { accessStatus: "pending" }, { accessStatus: "approved" }, { isAdmin: true }]) {
+    const route = createRoute(user, false, slug);
+    for (const file of files) {
+      const response = await route.get(file.split("/"));
+      assert.equal(response.status, access.canOpenLesson(user, lessons.getLessonBySlug(slug)) ? 200 : user ? 403 : 401);
+      assert.equal(response.headers.get("cache-control"), "private, no-store");
+      assert.ok(readFileSync(new URL(`lesson-content/lesson-19/${file}`, root)).length);
+    }
+    if (!access.canOpenLesson(user, lessons.getLessonBySlug(slug))) assert.equal(route.calls.reads, 0);
+  }
+  const approved = createRoute({ accessStatus: "approved" }, false, slug);
+  for (const file of ["../lesson-18/index.html", "assets/comic-13.png", "Lesson.tsx", "assets/../lesson.js"]) {
+    assert.equal((await approved.get(file.split("/"))).status, 404);
+  }
+  assert.equal(approved.calls.reads, 0);
+});
+
 test("all lesson 11 assets require approved access before any filesystem read", async () => {
   for (const user of [null, ...["pending", "rejected", "revoked"].map(accessStatus => ({ accessStatus }))]) {
     const route = createRoute(user, false, lessonElevenSlug);
@@ -117,6 +158,7 @@ test("lesson 4 is embedded below its course title only for authorized users", as
       "@/components/LessonElevenExperience": () => null,
       "@/components/LessonSeventeenExperience": () => null,
       "@/components/LessonEighteenExperience": () => null,
+      "@/components/LessonNineteenExperience": () => null,
     });
     const html = renderToStaticMarkup(await page.default({ params: Promise.resolve({ slug: lessonFourSlug }) }));
     const frame = html.indexOf(`src="/api/lesson-content/${lessonFourSlug}/index.html"`);
@@ -162,6 +204,7 @@ test("lesson 11 appears below the platform materials only for approved students"
       "@/components/LessonElevenExperience": loadModule("components/LessonElevenExperience.tsx").default,
       "@/components/LessonSeventeenExperience": () => null,
       "@/components/LessonEighteenExperience": () => null,
+      "@/components/LessonNineteenExperience": () => null,
     });
     const html = renderToStaticMarkup(await page.default({ params: Promise.resolve({ slug: lessonElevenSlug }) }));
     const frame = html.indexOf(`src="/api/lesson-content/${lessonElevenSlug}/index.html"`);
@@ -282,6 +325,7 @@ test("lesson 3 appears below existing materials only for approved students", asy
       "@/components/LessonElevenExperience": () => null,
       "@/components/LessonSeventeenExperience": () => null,
       "@/components/LessonEighteenExperience": () => null,
+      "@/components/LessonNineteenExperience": () => null,
     });
     const html = renderToStaticMarkup(await page.default({ params: Promise.resolve({ slug: lessonThreeSlug }) }));
     const frame = html.indexOf(`src="/api/lesson-content/${lessonThreeSlug}/index.html"`);
@@ -309,6 +353,22 @@ function createFeedbackRoute(fail = false) {
   }));
   return { route, submissions, submit };
 }
+
+test("lesson 19 sends each section to the existing teacher feedback channel", async () => {
+  const slug = "polinin-rodjendan";
+  for (const section of ["comic", "heroes", "words", "grammar", "timeline", "transform", "negative", "questions", "reading", "gifts", "quiz", "homework"]) {
+    const route = createFeedbackRoute();
+    const response = await route.submit({ lessonSlug: slug, section: `l19-${section}`, name: "Лида", message: "Вопрос" }, "https://ty-serb.vercel.app");
+    assert.equal(response.status, 200);
+    assert.equal(route.submissions[0].lessonSlug, slug);
+    assert.equal(route.submissions[0].section, `l19-${section}`);
+  }
+  const invalid = createFeedbackRoute();
+  for (const extra of [{ section: "l19-unknown" }, { section: "l3-comic" }, { kind: "introduction" }]) {
+    assert.equal((await invalid.submit({ lessonSlug: slug, section: "l19-comic", message: "Вопрос", ...extra }, "https://ty-serb.vercel.app")).status, 400);
+  }
+  assert.equal(invalid.submissions.length, 0);
+});
 
 test("lesson 3 feedback accepts only its known sections and preserves lesson 1 submissions", async () => {
   for (const section of ["intro", "comic", "countries", "taxi", "plural", "words", "possessives", "practice", "recap", "homework"]) {
@@ -490,6 +550,7 @@ test("lesson 2 appears below the existing material card only for authorized stud
       "@/components/LessonElevenExperience": () => null,
       "@/components/LessonSeventeenExperience": () => null,
       "@/components/LessonEighteenExperience": () => null,
+      "@/components/LessonNineteenExperience": () => null,
     });
     const html = renderToStaticMarkup(await page.default({ params: Promise.resolve({ slug: "kak-predstavitsya" }) }));
     const lessonContent = html.indexOf("data-lesson-two=");

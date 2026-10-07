@@ -6,6 +6,8 @@ const lessonTwoSlug = "kak-predstavitsya";
 const lessonTwoSections = new Set(["intro", "reading", "vocabulary", "comic", "grammar", "comparison", "practice", "phrases", "homework", "recap"].map(id => `l2-${id}`));
 const lessonThreeSlug = "rod-muzhskoy-zhenskiy-sredniy";
 const lessonThreeSections = new Set(["intro", "comic", "countries", "taxi", "plural", "words", "possessives", "practice", "recap", "homework"].map(id => `l3-${id}`));
+const lessonNineteenSlug = "polinin-rodjendan";
+const lessonNineteenSections = new Set(["comic", "heroes", "words", "grammar", "timeline", "transform", "negative", "questions", "reading", "gifts", "quiz", "homework"].map(id => `l19-${id}`));
 const lessonSiteOrigins = new Set(["https://ty-serb-lesson-two.lixi141210.chatgpt.site", "https://ty-serb-lesson-three.lixi141210.chatgpt.site"]);
 
 function responseHeaders(request: Request) {
@@ -48,9 +50,10 @@ export async function POST(request: Request) {
     const name = String(body.name ?? "").trim().slice(0, 80);
     const message = String(body.message ?? "").trim().slice(0, 1500);
     const kind = body.kind === "introduction" ? "introduction" : "feedback";
-    if (!["azbuka-i-proiznoshenie", lessonTwoSlug, lessonThreeSlug].includes(lessonSlug) || !section || message.length < 2
+    if (!["azbuka-i-proiznoshenie", lessonTwoSlug, lessonThreeSlug, lessonNineteenSlug].includes(lessonSlug) || !section || message.length < 2
       || (lessonSlug === lessonTwoSlug && (!lessonTwoSections.has(section) || kind !== "feedback"))
-      || (lessonSlug === lessonThreeSlug && (!lessonThreeSections.has(section) || kind !== "feedback"))) {
+      || (lessonSlug === lessonThreeSlug && (!lessonThreeSections.has(section) || kind !== "feedback"))
+      || (lessonSlug === lessonNineteenSlug && (!lessonNineteenSections.has(section) || kind !== "feedback"))) {
       return NextResponse.json({ error: "Некорректное сообщение" }, { status: 400, headers });
     }
 
