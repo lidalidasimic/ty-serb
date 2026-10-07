@@ -12,9 +12,11 @@ const lessonTenSlug = "ucimo-srpski-10";
 const lessonTenSections = new Set(["reci", "gramatika", "original", "pridevi", "mnozina", "vezbe", "domaci"].map(id => `l10-${id}`));
 const lessonElevenSlug = "ucimo-srpski-11";
 const lessonElevenSections = new Set(["intro", "words", "comic", "grammar", "practice", "test", "homework", "apps"].map(id => `l11-${id}`));
+const lessonFourSlug = "prilagatelnye";
+const lessonFourSections = new Set(["intro", "opening", "questions", "molim", "practice", "comic", "learning", "homework"].map(id => `l4-${id}`));
 const lessonNineteenSlug = "polinin-rodjendan";
 const lessonNineteenSections = new Set(["comic", "heroes", "words", "grammar", "timeline", "transform", "negative", "questions", "reading", "gifts", "quiz", "homework"].map(id => `l19-${id}`));
-const lessonSiteOrigins = new Set(["https://ty-serb-lesson-two.lixi141210.chatgpt.site", "https://ty-serb-lesson-three.lixi141210.chatgpt.site"]);
+const lessonSiteOrigins = new Set(["https://ty-serb-lesson-two.lixi141210.chatgpt.site", "https://ty-serb-lesson-three.lixi141210.chatgpt.site", "https://ty-serb-lesson-four.lixi141210.chatgpt.site"]);
 
 function responseHeaders(request: Request) {
   const headers: Record<string, string> = { "Cache-Control": "private, no-store", Vary: "Origin" };
@@ -56,11 +58,12 @@ export async function POST(request: Request) {
     const name = String(body.name ?? "").trim().slice(0, 80);
     const message = String(body.message ?? "").trim().slice(0, 1500);
     const kind = body.kind === "introduction" ? "introduction" : "feedback";
-    if (!["azbuka-i-proiznoshenie", lessonTwoSlug, lessonThreeSlug, lessonTenSlug, lessonElevenSlug, lessonNineteenSlug].includes(lessonSlug) || !section || message.length < 2
+    if (!["azbuka-i-proiznoshenie", lessonTwoSlug, lessonThreeSlug, lessonFourSlug, lessonTenSlug, lessonElevenSlug, lessonNineteenSlug].includes(lessonSlug) || !section || message.length < 2
       || (lessonSlug === lessonTwoSlug && (!lessonTwoSections.has(section) || kind !== "feedback"))
       || (lessonSlug === lessonThreeSlug && (!lessonThreeSections.has(section) || kind !== "feedback"))
       || (lessonSlug === lessonTenSlug && (!lessonTenSections.has(section) || kind !== "feedback"))
       || (lessonSlug === lessonElevenSlug && (!lessonElevenSections.has(section) || kind !== "feedback"))
+      || (lessonSlug === lessonFourSlug && (!lessonFourSections.has(section) || kind !== "feedback"))
       || (lessonSlug === lessonNineteenSlug && (!lessonNineteenSections.has(section) || kind !== "feedback"))) {
       return NextResponse.json({ error: "Некорректное сообщение" }, { status: 400, headers });
     }

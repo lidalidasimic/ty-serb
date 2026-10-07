@@ -363,7 +363,9 @@ test("lesson 11 keeps the shared lesson header above its directly mounted conten
 });
 
 test("lesson 4 retains original media, complete homework and eight empty audio players", () => {
-  const Lesson = loadModule("lesson-content/lesson-04/Lesson.tsx").default;
+  const tools = loadModule("lesson-content/lesson-04/lesson-tools.tsx");
+  const flow = loadModule("lesson-content/lesson-04/lesson-flow.tsx", { "./lesson-tools": tools });
+  const Lesson = loadModule("lesson-content/lesson-04/Lesson.tsx", { "./lesson-flow": flow }).default;
   const html = renderToStaticMarkup(React.createElement(Lesson));
   const sections = ["opening", "questions", "molim", "practice", "comic", "learning", "homework"];
   let previous = -1;
@@ -381,6 +383,12 @@ test("lesson 4 retains original media, complete homework and eight empty audio p
   assert.match(html, /learningapps\.org\/display\?v=pyj65zkf326/);
   for (let number = 5; number <= 10; number++) assert.match(html, new RegExp(`Упражнение ${number}`));
   assert.match(html, /Мой опросник:/);
+  assert.equal((html.match(/data-step=/g) || []).length, 8);
+  assert.equal((html.match(/class="step-panel"[^>]*hidden/g) || []).length, 7);
+  assert.equal((html.match(/class="feedback-form"/g) || []).length, 8);
+  assert.match(html, /Пройденные разделы/);
+  assert.match(html, /Проверить упражнения/);
+  assert.doesNotMatch(html, /gamma\.app\/(?:embed|docs)/);
   assert.doesNotMatch(html, /site-header|ty-serb-lesson-four.*chatgpt\.site/);
 });
 
@@ -622,6 +630,28 @@ test("lesson 11 feedback reaches the existing teacher moderation panel", async (
   assert.match(html, /l11-grammar/);
   assert.match(html, /Вопрос о прилагательных/);
   assert.match(html, /ожидает проверки/);
+});
+
+test("lesson 4 feedback uses the existing teacher channel and exact Site origin", async () => {
+  const origin = "https://ty-serb-lesson-four.lixi141210.chatgpt.site";
+  for (const section of ["intro", "opening", "questions", "molim", "practice", "comic", "learning", "homework"]) {
+    const route = createFeedbackRoute();
+    const result = await route.submit({ lessonSlug: lessonFourSlug, section: `l4-${section}`, message: "Вопрос по разделу" }, origin);
+    assert.equal(result.status, 200);
+    assert.equal(result.headers.get("access-control-allow-origin"), origin);
+    assert.equal(route.submissions[0].section, `l4-${section}`);
+    assert.equal(route.submissions[0].lessonSlug, lessonFourSlug);
+  }
+  const route = createFeedbackRoute();
+  const preflight = await route.route.OPTIONS(new Request("https://ty-serb.vercel.app/api/lesson-feedback", { method: "OPTIONS", headers: { origin } }));
+  assert.equal(preflight.status, 204);
+  assert.equal(preflight.headers.get("access-control-allow-origin"), origin);
+  assert.equal(preflight.headers.get("access-control-allow-credentials"), null);
+  assert.equal((await route.submit({ lessonSlug: lessonFourSlug, section: "l4-unknown", message: "Вопрос" }, origin)).status, 400);
+  assert.equal((await route.submit({ lessonSlug: lessonFourSlug, section: "l4-intro", message: "Вопрос", kind: "introduction" }, origin)).status, 400);
+  assert.equal((await route.submit({ lessonSlug: lessonFourSlug, section: "l4-intro", message: "Вопрос" }, "https://unrelated.example")).status, 403);
+  const failure = await createFeedbackRoute(true).submit({ lessonSlug: lessonFourSlug, section: "l4-intro", message: "Вопрос" }, origin);
+  assert.equal(failure.status, 500);
 });
 
 test("lesson 19 sends each section to the existing teacher feedback channel", async () => {
