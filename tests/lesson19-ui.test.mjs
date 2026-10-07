@@ -53,5 +53,5 @@ test('lesson title precedes the embedded lesson and vocabulary has no dropdowns'
   assert.equal(html.includes('<select'), false);
   assert.match(html, /connection-lines/);
   const component = readFileSync(new URL('components/LessonNineteenExperience.tsx', root), 'utf8');
-  assert.ok(component.indexOf('Лекция 19. Миссия РТН-2') < component.indexOf('<iframe'));
+  assert.ok(component.indexOf('Лекция 19. Мисија Ртањ 2') < component.indexOf('<iframe'));
 });

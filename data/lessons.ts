@@ -333,7 +333,7 @@ export const lessons: Lesson[] = [
   {
     number: 19,
     slug: "polinin-rodjendan",
-    title: "Лекция 19. Миссия РТН-2. Полинин рођендан.",
+    title: "Лекция 19. Мисија Ртањ 2. Полинин рођендан.",
     level: "A1+",
     topic: "Прошедшее и будущее время, вопросы и отрицания",
     status: "готово",
