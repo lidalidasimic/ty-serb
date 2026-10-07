@@ -16,6 +16,7 @@ import LessonOneGammaExperience from "@/components/LessonOneGammaExperience";
 import LessonTwoExperience from "@/components/LessonTwoExperience";
 import LessonThreeExperience from "@/components/LessonThreeExperience";
 import LessonFourExperience from "@/components/LessonFourExperience";
+import LessonTenExperience from "@/components/LessonTenExperience";
 import LessonElevenExperience from "@/components/LessonElevenExperience";
 import LessonSeventeenExperience from "@/components/LessonSeventeenExperience";
 import LessonEighteenExperience from "@/components/LessonEighteenExperience";
@@ -215,15 +216,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
       {lesson.number === 2 ? <LessonTwoExperience /> : null}
       {lesson.number === 3 ? <LessonThreeExperience /> : null}
       {lesson.number === 4 ? <LessonFourExperience /> : null}
-      {lesson.number === 10 ? (
-        <section id="lesson-10-start" className="bg-white">
-          <iframe
-            src="/api/lesson-content/ucimo-srpski-10/index.html"
-            title="Лекция 10. Указательные местоимения."
-            className="block h-[calc(100dvh-88px)] min-h-[620px] w-full border-0"
-          />
-        </section>
-      ) : null}
+      {lesson.number === 10 ? <LessonTenExperience /> : null}
       {lesson.number === 11 ? <LessonElevenExperience /> : null}
       {lesson.number === 1 ? (
         <>

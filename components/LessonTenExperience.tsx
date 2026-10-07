@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export default function LessonElevenExperience() {
+export default function LessonTenExperience() {
   const ref = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -10,8 +10,8 @@ export default function LessonElevenExperience() {
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
-    const base = "/api/lesson-content/ucimo-srpski-11";
-    element.id = `lesson-eleven-${crypto.randomUUID()}`;
+    const base = "/api/lesson-content/ucimo-srpski-10";
+    element.id = `lesson-ten-${crypto.randomUUID()}`;
     let disposed = false;
     let unmount: (() => void) | undefined;
     const stylesheet = document.createElement("link");
@@ -20,9 +20,7 @@ export default function LessonElevenExperience() {
     const script = document.createElement("script");
     script.src = `${base}/lesson.js`;
     script.dataset.rootId = element.id;
-    const fail = () => {
-      if (!disposed) { setError(true); setLoading(false); }
-    };
+    const fail = () => { if (!disposed) { setError(true); setLoading(false); } };
     const ready = (event: Event) => {
       unmount = (event as CustomEvent<() => void>).detail;
       if (!disposed) setLoading(false);
@@ -47,11 +45,9 @@ export default function LessonElevenExperience() {
     };
   }, []);
 
-  return (
-    <section id="lesson-11-start" className="bg-white">
-      {loading && <p className="px-6 py-8" role="status">Загружаю урок...</p>}
-      {error && <p className="px-6 py-8" role="alert">Не удалось открыть урок. <a href="/lessons/ucimo-srpski-11">Обновить страницу</a></p>}
-      <div ref={ref} data-lesson-eleven aria-busy={loading} />
-    </section>
-  );
+  return <section id="lesson-10-start" className="bg-white">
+    {loading && <p className="px-6 py-8" role="status">Загружаю урок...</p>}
+    {error && <p className="px-6 py-8" role="alert">Не удалось открыть урок. <a href="/lessons/ucimo-srpski-10">Обновить страницу</a></p>}
+    <div ref={ref} data-lesson-ten aria-busy={loading} />
+  </section>;
 }

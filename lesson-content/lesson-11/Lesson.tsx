@@ -1,6 +1,7 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { ArrowLeft, ArrowRight, ExternalLink } from "lucide-react";
 
-const comic = "./comic.png";
+const comic = "/api/lesson-content/ucimo-srpski-11/comic.png";
 
 const words = [
   ["некако", "как-то"],
@@ -52,7 +53,8 @@ const lessonRoute = [
   ["03", "Грамматика", "#grammar"],
   ["04", "Практика", "#practice"],
   ["05", "Мини-тест", "#test"],
-  ["06", "LearningApps", "#apps"],
+  ["06", "Домашнее", "#homework"],
+  ["07", "LearningApps", "#apps"],
 ];
 
 function Section({
@@ -92,153 +94,124 @@ function CheckButton({ onClick, reset }: { onClick: () => void; reset?: () => vo
   );
 }
 
-function WordMatch() {
-  const shuffled = useMemo(
-    () => [
-      "туман",
-      "сильнее",
-      "кто-то",
-      "снова",
-      "прилагательные",
-      "как-то",
-      "стирать",
-      "мир",
-      "которыми",
-      "вернуть",
-      "волшебно",
-      "слова",
-      "быстрый",
-      "тогда",
-    ],
-    [],
-  );
+const wordTranslations = ["туман", "сильнее", "кто-то", "снова", "прилагательные", "как-то", "стирать", "мир", "которыми", "вернуть", "волшебно", "слова", "быстрый", "тогда"];
+const comicTranslations = ["собака", "разноцветный", "сумка", "спасён", "обычная магия", "серо", "улицы широкие", "что-то не так", "описываем"];
+
+type MatchLine = { word: string; translation: string; x1: number; y1: number; x2: number; y2: number };
+
+function WordMatch({ items, translations, label }: { items: string[][]; translations: string[]; label: string }) {
   const [left, setLeft] = useState<string | null>(null);
+  const [right, setRight] = useState<string | null>(null);
   const [pairs, setPairs] = useState<Record<string, string>>({});
   const [checked, setChecked] = useState(false);
-  const used = new Set(Object.values(pairs));
+  const [status, setStatus] = useState("");
+  const grid = useRef<HTMLDivElement>(null);
+  const leftButtons = useRef(new Map<string, HTMLButtonElement>());
+  const rightButtons = useRef(new Map<string, HTMLButtonElement>());
+  const [geometry, setGeometry] = useState({ width: 1, height: 1, lines: [] as MatchLine[] });
+
+  useLayoutEffect(() => {
+    const element = grid.current;
+    if (!element) return;
+    const measure = () => {
+      const box = element.getBoundingClientRect();
+      const lines = Object.entries(pairs).flatMap(([word, translation]) => {
+        const source = leftButtons.current.get(word)?.getBoundingClientRect();
+        const target = rightButtons.current.get(translation)?.getBoundingClientRect();
+        return source && target ? [{ word, translation,
+          x1: source.right - box.left + 2, y1: source.top - box.top + source.height / 2,
+          x2: target.left - box.left - 2, y2: target.top - box.top + target.height / 2,
+        }] : [];
+      });
+      setGeometry({ width: box.width, height: box.height, lines });
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    [...leftButtons.current.values(), ...rightButtons.current.values()].forEach(button => observer.observe(button));
+    measure();
+    return () => observer.disconnect();
+  }, [pairs]);
+
+  const connect = (word: string, translation: string) => {
+    setPairs(current => {
+      const next = Object.fromEntries(Object.entries(current).filter(([key, value]) => key !== word && value !== translation));
+      return { ...next, [word]: translation };
+    });
+    setLeft(null);
+    setRight(null);
+    setChecked(false);
+    setStatus(`${word} — ${translation}`);
+  };
+  const pairClass = (word: string) => pairs[word]
+    ? checked ? (pairs[word] === items.find(item => item[0] === word)?.[1] ? "correct" : "wrong") : "connected"
+    : "";
 
   return (
-    <div className="exercise">
-      <p className="instruction">Нажми слово слева, затем его перевод справа.</p>
-      <div className="match-grid">
-        <div>
-          {words.map(([sr]) => (
+    <div className="exercise word-match" role="group" aria-label={label}>
+      <div className="match-grid" ref={grid}>
+        <svg className="match-lines" viewBox={`0 0 ${geometry.width} ${geometry.height}`} aria-hidden="true">
+          {geometry.lines.map(line => {
+            const middle = (line.x1 + line.x2) / 2;
+            const color = checked ? (items.find(item => item[0] === line.word)?.[1] === line.translation ? "var(--green)" : "var(--red)") : "var(--blue)";
+            return <g key={line.word} style={{ color }}>
+              <path data-match-line d={`M ${line.x1} ${line.y1} C ${middle} ${line.y1}, ${middle} ${line.y2}, ${line.x2} ${line.y2}`} />
+              <circle cx={line.x1} cy={line.y1} r="4" />
+              <circle cx={line.x2} cy={line.y2} r="4" />
+            </g>;
+          })}
+        </svg>
+        <div className="match-column">
+          {items.map(([sr]) => (
             <button
               type="button"
               key={sr}
-              onClick={() => setLeft(sr)}
-              className={`match ${left === sr ? "selected" : ""} ${
-                checked ? (pairs[sr] === words.find((item) => item[0] === sr)?.[1] ? "correct" : "wrong") : ""
-              }`}
+              ref={node => { if (node) leftButtons.current.set(sr, node); else leftButtons.current.delete(sr); }}
+              aria-pressed={left === sr}
+              title={pairs[sr] ? `${sr} — ${pairs[sr]}` : sr}
+              onClick={() => {
+                if (right) connect(sr, right);
+                else { setLeft(left === sr ? null : sr); setRight(null); }
+              }}
+              className={`match ${left === sr ? "selected" : ""} ${pairClass(sr)}`}
             >
               {sr}
-              {pairs[sr] && <small>{pairs[sr]}</small>}
             </button>
           ))}
         </div>
-        <div>
-          {shuffled.map((ru) => (
-            <button
+        <div className="match-column">
+          {translations.map(ru => {
+            const source = Object.keys(pairs).find(word => pairs[word] === ru);
+            return <button
               type="button"
               key={ru}
-              disabled={used.has(ru)}
+              ref={node => { if (node) rightButtons.current.set(ru, node); else rightButtons.current.delete(ru); }}
+              aria-pressed={right === ru}
+              title={source ? `${source} — ${ru}` : ru}
               onClick={() => {
-                if (left) {
-                  setPairs((current) => ({ ...current, [left]: ru }));
-                  setLeft(null);
-                  setChecked(false);
-                }
+                if (left) connect(left, ru);
+                else { setRight(right === ru ? null : ru); setLeft(null); }
               }}
-              className="match translation"
+              className={`match translation ${right === ru ? "selected" : ""} ${source ? pairClass(source) : ""}`}
             >
               {ru}
-            </button>
-          ))}
+            </button>;
+          })}
         </div>
       </div>
+      <p className="match-status" aria-live="polite">{status}</p>
       <CheckButton
         onClick={() => setChecked(true)}
         reset={() => {
           setPairs({});
           setLeft(null);
+          setRight(null);
           setChecked(false);
-        }}
-      />
-      {checked && <p className="feedback">Правильно: {words.filter(([a, b]) => pairs[a] === b).length} из {words.length}.</p>}
-    </div>
-  );
-}
-
-function ComicWordMatch() {
-  const shuffled = useMemo(
-    () => [
-      "собака",
-      "разноцветный",
-      "сумка",
-      "спасён",
-      "обычная магия",
-      "серо",
-      "улицы широкие",
-      "что-то не так",
-      "описываем",
-    ],
-    [],
-  );
-  const [left, setLeft] = useState<string | null>(null);
-  const [pairs, setPairs] = useState<Record<string, string>>({});
-  const [checked, setChecked] = useState(false);
-  const used = new Set(Object.values(pairs));
-
-  return (
-    <div className="exercise">
-      <p className="instruction">Соедини сербские выражения с русским переводом.</p>
-      <div className="match-grid">
-        <div>
-          {comicWords.map(([sr]) => (
-            <button
-              type="button"
-              key={sr}
-              onClick={() => setLeft(sr)}
-              className={`match ${left === sr ? "selected" : ""} ${
-                checked ? (pairs[sr] === comicWords.find((item) => item[0] === sr)?.[1] ? "correct" : "wrong") : ""
-              }`}
-            >
-              {sr}
-              {pairs[sr] && <small>{pairs[sr]}</small>}
-            </button>
-          ))}
-        </div>
-        <div>
-          {shuffled.map((ru) => (
-            <button
-              type="button"
-              key={ru}
-              disabled={used.has(ru)}
-              onClick={() => {
-                if (left) {
-                  setPairs((current) => ({ ...current, [left]: ru }));
-                  setLeft(null);
-                  setChecked(false);
-                }
-              }}
-              className="match translation"
-            >
-              {ru}
-            </button>
-          ))}
-        </div>
-      </div>
-      <CheckButton
-        onClick={() => setChecked(true)}
-        reset={() => {
-          setPairs({});
-          setLeft(null);
-          setChecked(false);
+          setStatus("Все пары сброшены.");
         }}
       />
       {checked && (
-        <p className="feedback">
-          Правильно: {comicWords.filter(([a, b]) => pairs[a] === b).length} из {comicWords.length}.
+        <p className="feedback" role="status">
+          Правильно: {items.filter(([a, b]) => pairs[a] === b).length} из {items.length}.
         </p>
       )}
     </div>
@@ -417,26 +390,73 @@ function LearningApp({ id, title, description }: { id: string; title: string; de
 }
 
 export default function LessonEleven() {
-  return (
-    <main>
-      <div className="platform-progress" aria-hidden>
-        <i />
-      </div>
-      <header className="site-header">
-        <a className="brand" href="/lessons" target="_top">
-          <span>TY</span> SERB
-        </a>
-        <nav aria-label="Разделы урока">
-          <a href="#words">Слова</a>
-          <a href="#grammar">Грамматика</a>
-          <a href="#apps">Apps</a>
-        </nav>
-        <a className="platform-link" href="/lessons" target="_top">
-          Все уроки
-        </a>
-      </header>
+  const lesson = useRef<HTMLDivElement>(null);
+  const navigation = useRef<HTMLElement>(null);
+  const content = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ progress: 0, active: "top" });
 
-      <div id="top" className="page">
+  useEffect(() => {
+    const element = lesson.current;
+    const bar = navigation.current;
+    const page = content.current;
+    if (!element || !bar || !page) return;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const headerHeight = parseFloat(getComputedStyle(element).getPropertyValue("--lesson-top")) || 0;
+      const navigationHeight = bar.getBoundingClientRect().height;
+      element.style.setProperty("--lesson-nav-height", `${navigationHeight}px`);
+      const box = page.getBoundingClientRect();
+      const start = window.scrollY + box.top - headerHeight - navigationHeight;
+      const end = window.scrollY + box.bottom - window.innerHeight;
+      const progress = Math.round(Math.max(0, Math.min(1, (window.scrollY - start) / Math.max(1, end - start))) * 100);
+      let active = "top";
+      for (const [, , href] of lessonRoute) {
+        if ((element.querySelector(href)?.getBoundingClientRect().top ?? Infinity) <= headerHeight + navigationHeight + 48) {
+          active = href.slice(1);
+        }
+      }
+      setPosition(current => current.progress === progress && current.active === active ? current : { progress, active });
+    };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
+    const observer = new ResizeObserver(schedule);
+    observer.observe(page);
+    observer.observe(bar);
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    const target = document.getElementById(location.hash.slice(1));
+    if (target && element.contains(target)) target.scrollIntoView();
+    schedule();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  return (
+    <div className="lesson-experience" ref={lesson}>
+      <nav className="lesson-navigation" aria-label="Разделы урока 11" ref={navigation}>
+        <div className="lesson-navigation-inner">
+          <div className="lesson-progress-meta">
+            <a href="#top">Урок 11</a>
+            <span>{position.progress}%</span>
+          </div>
+          <div className="lesson-section-links">
+            {lessonRoute.map(([number, label, href]) => (
+              <a key={number} href={href} aria-current={position.active === href.slice(1) ? "location" : undefined}>
+                {label}
+              </a>
+            ))}
+          </div>
+        </div>
+        <div className="lesson-progress-track" role="progressbar" aria-label="Прогресс чтения урока" aria-valuemin={0} aria-valuemax={100} aria-valuenow={position.progress}>
+          <div style={{ width: `${position.progress}%` }} />
+        </div>
+      </nav>
+
+      <div id="top" className="page" ref={content}>
         <section className="hero">
           <div>
             <p className="badge">ЛЕКЦИЯ 11 · A1+</p>
@@ -452,7 +472,7 @@ export default function LessonEleven() {
               <a className="primary start" href="#contents">
                 Начать урок ↓
               </a>
-              <a className="secondary start" href="/lessons" target="_top">
+              <a className="secondary start" href="/lessons">
                 Каталог курса
               </a>
             </div>
@@ -487,7 +507,7 @@ export default function LessonEleven() {
             ))}
           </div>
           <h3>Соедини слова с переводами</h3>
-          <WordMatch />
+          <WordMatch items={words} translations={wordTranslations} label="Слова и переводы" />
         </Section>
 
         <Section id="comic" eyebrow="Читаем" title="Стрип: Ко је украо придеве?" tone="blue">
@@ -512,7 +532,7 @@ export default function LessonEleven() {
               ))}
             </div>
             <h3>Соедини слова с переводами</h3>
-            <ComicWordMatch />
+            <WordMatch items={comicWords} translations={comicTranslations} label="Слова из комикса и переводы" />
           </div>
         </Section>
 
@@ -600,15 +620,20 @@ export default function LessonEleven() {
             <LearningApp id="ppi7p6qnj26" title="MILIONER 15" description="Проверь себя в игре «Миллионер»." />
           </div>
         </Section>
+
+        <div className="lesson-footer">
+          <div className="lesson-materials">
+            <a href="/api/materials/ucimo-srpski-11/gamma" target="_blank" rel="noreferrer"><ExternalLink size={16} aria-hidden="true" />Презентация</a>
+            <a href="/api/materials/ucimo-srpski-11/telegram" target="_blank" rel="noreferrer"><ExternalLink size={16} aria-hidden="true" />Telegram</a>
+          </div>
+          <nav aria-label="Переход между лекциями">
+            <a href="/lessons/ucimo-srpski-10"><ArrowLeft size={18} aria-hidden="true" />Предыдущая лекция</a>
+            <a href="/lessons">Все уроки</a>
+            <a href="/lessons/ucimo-srpski-12">Следующая лекция<ArrowRight size={18} aria-hidden="true" /></a>
+          </nav>
+        </div>
       </div>
 
-      <footer>
-        <b>TY SERB</b>
-        <span>ЛЕКЦИЯ 11 · Лидија Симић</span>
-        <a href="/lessons" target="_top">
-          Все уроки
-        </a>
-      </footer>
-    </main>
+    </div>
   );
 }

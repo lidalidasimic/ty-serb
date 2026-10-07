@@ -40,7 +40,7 @@ const lessonThreeAudio = new Set([
 
 function isAllowedFile(lessonNumber: number, file: string) {
   if (lessonNumber === 10) {
-    return ["index.html", "styles.css", "lesson.js"].includes(file);
+    return ["index.html", "styles.css", "embedded.css", "lesson.js"].includes(file);
   }
   if (lessonNumber === 19) {
     return ["index.html", "styles.css", "lesson.js", "assets/lucide.min.js"].includes(file)
@@ -51,7 +51,7 @@ function isAllowedFile(lessonNumber: number, file: string) {
     return ["index.html", "styles.css", "lesson.js", "question-reference.png"].includes(file);
   }
   if (lessonNumber === 11) {
-    return ["index.html", "styles.css", "lesson.js", "comic.png"].includes(file);
+    return ["index.html", "styles.css", "embedded.css", "lesson.js", "comic.png"].includes(file);
   }
   if (lessonNumber === 3) {
     return ["index.html", "styles.css", "lesson.js", "comic.png"].includes(file)
