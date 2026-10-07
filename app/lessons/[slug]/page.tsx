@@ -172,7 +172,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
                 тема
               </p>
               <p className="mt-2 text-2xl font-black">{lesson.topic}</p>
-              <a
+              {lesson.number !== 4 ? <a
                 href={`/api/materials/${lesson.slug}/gamma`}
                 target="_blank"
                 rel="noreferrer"
@@ -180,7 +180,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
               >
                 Открыть презентацию
                 <ExternalLink size={18} aria-hidden />
-              </a>
+              </a> : null}
               {hasWorksheet ? (
                 <a
                   href={`/api/materials/${lesson.slug}/worksheet`}

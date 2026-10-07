@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useContext, useEffect, useState, type ReactNode } from "react";
+import { CheckVersion, LessonFlow, StepSection } from "./lesson-flow";
 
-const gamma = "https://gamma.app/docs/4--5fdhvt36nbimmwq";
 const cdn = "https://cdn.gamma.app/isn4m4spq0jh937/";
 const panels = [
   ["93a71afe6ba34887b64b1a208992ebee", "Суперполина и Коцкослав!", "Иду у авантуру!"],
@@ -12,7 +12,6 @@ const panels = [
   ["99b66cec25a5418fa4fde88b8d02ddb9", "И сад, наши хероји — Суперполина и њен коњ Коцкослав, Чудни Хари и Хермиона — морају да одбране Омск.", "сад — сейчас · морају — должны"],
   ["e41a539c1e05430f9b76932e0c83f277", "Нека битка за Омск почне!", "нека — пусть · почне — начнётся"],
 ];
-const chapters = [["opening", "Молим или Молим?"], ["questions", "Питања"], ["molim", "Молим?"], ["practice", "Вежбање"], ["comic", "Битка за Омск"], ["learning", "LearningApps"], ["homework", "Домаћи"]];
 
 function Audio({ id, title }: { id: string; title: string }) {
   return <div className="audio-slot" data-audio-slot={id}><div><b>{title}</b><span>Аудио · ускоро</span></div><audio controls preload="none" aria-label={title} /></div>;
@@ -23,7 +22,7 @@ function useAnswers(id: string) {
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(`ty-serb-04:${id}`) || "{}");
-      if (saved && typeof saved === "object" && !Array.isArray(saved)) setValues(saved);
+      if (saved && typeof saved === "object" && !Array.isArray(saved)) setValues(Object.fromEntries(Object.entries(saved).filter(([, value]) => typeof value === "string")) as Record<string, string>);
     } catch { /* Optional persistence. */ }
     setReady(true);
   }, [id]);
@@ -49,6 +48,8 @@ function Exercise({ id, title, intro, rows, free = false }: { id: string; title:
   const [checked, setChecked] = useState(false);
   const [shown, setShown] = useState(false);
   const [done, setDone] = useState(false);
+  const checkVersion = useContext(CheckVersion);
+  useEffect(() => { if (checkVersion > 0 && !free) setChecked(true); }, [checkVersion, free]);
   const statuses = rows.map((row, i) => (row.answers || []).map((accepted, j) => {
     const value = values[`${i}-${j}`] || "";
     return !value.trim() ? "empty" : accepted.some(answer => row.options ? answer === value : normalize(answer) === normalize(value)) ? "correct" : "incorrect";
@@ -66,7 +67,7 @@ function Notebook({ id, label, rows = 4 }: { id: string; label: string; rows?: n
   return <label className="notebook">{label}<textarea disabled={!ready} rows={rows} value={values.text || ""} onChange={e => update("text", e.target.value)} /></label>;
 }
 function Section({ id, number, eyebrow, title, children }: { id: string; number: string; eyebrow: string; title: string; children: ReactNode }) {
-  return <section id={id} className="lesson-section"><div className="section-heading"><span className="section-number">{number}</span><div><p className="eyebrow">{eyebrow}</p><h2>{title}</h2></div></div>{children}</section>;
+  return <StepSection id={id}><section id={id} className="lesson-section"><div className="section-heading"><span className="section-number">{number}</span><div><p className="eyebrow">{eyebrow}</p><h2>{title}</h2></div></div>{children}</section></StepSection>;
 }
 const formRows = [
   { text: "Ја сам из Русије. → ___", answers: [["Да ли си ти из Русије?", "Да ли сам ја из Русије?", "Да ли сам из Русије?", "Да ли си из Русије?"]] },
@@ -86,11 +87,8 @@ const liRows = [
 const yesNo = ["Јесте ли из Енглеске?", "Јеси ли Американац?", "Јесмо ли у Пекингу?", "Јесу ли они Кинези?", "Јесте ли лекар?", "Јесмо ли у Москви?"];
 const homeworkQuestions = ["Да ли си из Америке?", "Да ли је Ана из Кине?", "Да ли је он из Енглеске?", "Да ли сте из Италије?", "Да ли су они из Пољске?"];
 export default function Lesson() {
-  const [finished, setFinished] = useState(false);
-  useEffect(() => { try { setFinished(localStorage.getItem("ty-serb-04:finished") === "true"); } catch { /* Optional persistence. */ } }, []);
   return <>
-    <main><section id="top" className="hero"><p className="eyebrow">УРОК 4 · A1</p><h1>Мост.<em>Питања и глаголи!</em></h1><p className="hero-copy">Да ли си…? Јеси ли…? „Молим” у живом говору и велика битка за Омск.</p><Audio id="intro" title="Лидијин увод" /><details className="presentation"><summary>Оригинальная презентация · Лекција 4</summary><iframe src="https://gamma.app/embed/5fdhvt36nbimmwq" title="Оригинальная четвёртая лекция в Gamma" loading="lazy" allowFullScreen /><a href={gamma} target="_blank" rel="noreferrer">Открыть в Gamma ↗</a></details></section>
-    <nav className="lesson-nav" aria-label="Делови лекције">{chapters.map(([id, title], i) => <a href={`#${id}`} key={id}><span>{String(i + 1).padStart(2, "0")}</span>{title}</a>)}</nav>
+    <LessonFlow><main><StepSection id="intro"><section id="intro" className="hero"><p className="eyebrow">УРОК 4 · A1</p><h1>Мост.<em>Питања и глаголи!</em></h1><p className="hero-copy">Да ли си…? Јеси ли…? „Молим” у живом говору и велика битка за Омск.</p><Audio id="intro" title="Лидијин увод" /></section></StepSection>
     <Section id="opening" number="01" eyebrow="СТРИП" title="МОЛИМ или МОЛИМ?"><Audio id="molim-comic" title="МОЛИМ или МОЛИМ? · читање" /><figure className="opening-comic"><img src={`${cdn}e21c2589eaa04927a3ad367cc4697d0b/original/image.png`} alt="Оригинални стрип МОЛИМ или МОЛИМ?" width="1054" height="1492" /><figcaption>МОЛИМ или МОЛИМ?</figcaption></figure></Section>
     <Section id="questions" number="02" eyebrow="ГРАМАТИКА" title="Как построить вопрос"><p>В сербском языке вопрос можно построить двумя способами. Оба варианта правильные.</p><Audio id="questions" title="Как построить вопрос" /><figure className="original-diagram"><img src="./question-reference.png" alt="Оригинальная схема из Gamma: Да ли + краткая форма бити; полная форма бити + ли; формы и примеры ответов." width="903" height="1106" /><figcaption>Оригинална дијаграма · Gamma</figcaption></figure>
       <div className="grammar-pair"><div><h3>ДА ЛИ + краткая форма</h3><p>Да ли си студент?<br />Да ли је она лепа?<br />Да ли сте Срби?</p></div><div><h3>Полная форма + ЛИ</h3><p>Јеси ли студент?<br />Је ли она лепа?<br />Јесте ли Срби?</p></div></div><table className="forms"><caption>Глагол бити · полная и отрицательная форма</caption><tbody>{[["ја", "јесам", "нисам"], ["ти", "јеси", "ниси"], ["он / она / оно", "јесте", "није"], ["ми", "јесмо", "нисмо"], ["ви", "јесте", "нисте"], ["они / оне / она", "јесу", "нису"]].map(row => <tr key={row[0]}>{row.map((cell, i) => i === 0 ? <th scope="row" key={i}>{cell}</th> : <td key={i}>{cell}</td>)}</tr>)}</tbody></table><blockquote><b>Важно.</b> В русском часто достаточно интонации: «Ты студент?» В сербском используем «Да ли си студент?» или «Јеси ли студент?» В вопросе с «да ли» краткая форма бити стоит сразу после «да ли».</blockquote>
@@ -118,6 +116,5 @@ export default function Lesson() {
       <div className="homework-exercise"><h3>Упражнение 8</h3><p>Ответьте на вопросы сначала утвердительно, потом отрицательно.</p>{homeworkQuestions.map((question,i) => <Notebook key={question} id={`homework-8-${i}`} label={`${i+1}. ${question}`} rows={2} />)}</div>
       <div className="homework-exercise"><h3>Упражнение 9</h3><p>Вопросы из предыдущего упражнения замените на вопросы с частицей <b>ли</b>, используя полные формы глагола бити.</p><Notebook id="homework-9" label="Пять вопросов с ‘ли’" rows={5} /></div>
       <div className="homework-exercise"><h3>Упражнение 10 · Мой опросник</h3><p>Составьте опросник из 5–7 пунктов на сербском языке для прибывающих в страну. Обязательно включите перечисленные ниже вопросы. Затем заполните эту анкету.</p><h4>Как вас зовут?</h4><ol><li>Откуда вы? Одакле сте?</li><li>Кто вы по национальности?</li><li>Кто вы по профессии?</li><li>Како се зовеш? или Како се зовете?</li><li>Чиме се бавиш? Да ли имаш посао?</li><li>Зашто долазите? Туризам, посета пријатељу.</li><li>Да ли сте дошли да живите или да радите? Или туристички?</li><li>Која је ваша националност?</li></ol><Notebook id="homework-10" label="Мой опросник:" rows={10} /></div>
-      <button className="finish primary" onClick={() => { const next = !finished; setFinished(next); try { localStorage.setItem("ty-serb-04:finished", String(next)); } catch { /* Optional persistence. */ } }} aria-pressed={finished}>{finished ? "✓ Лекција је завршена" : "Заврши лекцију"}</button>
-    </Section></main></>;
+    </Section></main></LessonFlow></>;
 }
