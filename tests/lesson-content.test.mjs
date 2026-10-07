@@ -68,7 +68,7 @@ test("lesson 4 protects every file before reading it", async () => {
 });
 
 const lessonElevenSlug = "ucimo-srpski-11";
-const lessonElevenFiles = ["index.html", "styles.css", "lesson.js", "comic.png"];
+const lessonElevenFiles = ["index.html", "styles.css", "embedded.css", "lesson.js", "comic.png"];
 
 test("lesson 19 opens as the course experience only after the access check", async () => {
   const slug = "polinin-rodjendan";
@@ -189,7 +189,7 @@ test("approved students receive lesson 11 assets only from its private folder", 
   assert.equal((await createRoute({ accessStatus: "approved" }, true, lessonElevenSlug).get(["index.html"])).status, 404);
 });
 
-test("lesson 11 appears below the platform materials only for approved students", async () => {
+test("lesson 11 opens directly in the course page only for approved students", async () => {
   for (const user of [null, { id: "student", accessStatus: "pending" }, { id: "student", accessStatus: "approved" }]) {
     const page = loadModule("app/lessons/[slug]/page.tsx", {
       "next/link": ({ children, ...props }) => React.createElement("a", props, children),
@@ -207,14 +207,13 @@ test("lesson 11 appears below the platform materials only for approved students"
       "@/components/LessonNineteenExperience": () => null,
     });
     const html = renderToStaticMarkup(await page.default({ params: Promise.resolve({ slug: lessonElevenSlug }) }));
-    const frame = html.indexOf(`src="/api/lesson-content/${lessonElevenSlug}/index.html"`);
+    const lessonContent = html.indexOf("data-lesson-eleven=");
     if (user?.accessStatus === "approved") {
-      assert.ok(frame > html.indexOf("Открыть презентацию"));
-      assert.ok(frame > html.indexOf("Telegram-пост"));
-      assert.match(html, /href="\/lessons\/ucimo-srpski-10"/);
-      assert.match(html, /href="\/lessons\/ucimo-srpski-12"/);
+      assert.ok(lessonContent !== -1);
+      assert.doesNotMatch(html, /<iframe/);
+      assert.doesNotMatch(html, /Открыть презентацию|Telegram-пост/);
     } else {
-      assert.equal(frame, -1);
+      assert.equal(lessonContent, -1);
       assert.match(html, /Доступ к материалам ожидает подтверждения/);
     }
   }
@@ -252,7 +251,18 @@ test("lesson 11 embeds the two requested LearningApps at the end", () => {
     assert.ok(html.includes(`href="https://learningapps.org/watch?id=${id}"`));
   }
   assert.doesNotMatch(html, /pyj65zkf326|pezs2mbpa26/);
-  assert.match(html, /src="\.\/comic\.png"/);
+  assert.match(html, /src="\/api\/lesson-content\/ucimo-srpski-11\/comic\.png"/);
+  assert.doesNotMatch(html, /<main|<header|<footer/);
+  assert.match(html, /href="\/lessons\/ucimo-srpski-10"/);
+  assert.match(html, /href="\/lessons\/ucimo-srpski-12"/);
+  assert.match(html, /href="\/api\/materials\/ucimo-srpski-11\/gamma"/);
+  assert.match(html, /href="\/api\/materials\/ucimo-srpski-11\/telegram"/);
+});
+
+test("lesson 11 styles stay inside the protected course experience", async () => {
+  const { default: postcss } = await import("postcss");
+  const stylesheet = postcss.parse(readFileSync(new URL("lesson-content/lesson-11/embedded.css", root), "utf8"));
+  stylesheet.walkRules(rule => assert.ok(rule.selectors.every(selector => selector.startsWith("[data-lesson-eleven]"))));
 });
 const lessonThreeFiles = [
   "index.html", "styles.css", "lesson.js", "comic.png",
