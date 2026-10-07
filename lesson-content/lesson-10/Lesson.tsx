@@ -1,7 +1,8 @@
 "use client";
 import type { CSSProperties } from "react";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Play, Pause, Square, RotateCcw, Volume2, FileText } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Play, Pause, Square, RotateCcw, Volume2, FileText, PartyPopper } from "lucide-react";
+import { Feedback, Fireworks } from "../lesson-03/LessonTools";
 
 const images = [
   {
@@ -88,18 +89,21 @@ function SectionNav({ index }: { index: number }) {
   const { jump, complete, completed } = useContext(LessonNavigation);
   const done = completed.includes(index);
   return (
+    <>
     <nav className="sectionNav" aria-label="Навигација кроз лекцију">
       <button type="button" className="icon-button" title="Назад" aria-label="Назад" disabled={index === 0} onClick={() => jump(index - 1)}><ArrowLeft size={20} /></button>
       <button type="button" className={done ? "done" : ""} onClick={() => complete(index)} disabled={done}><Check size={18} />{done ? "Део је завршен" : index === 6 ? "Заврши лекцију" : "Заврши овај део"}</button>
-      {index < 6 && <button type="button" className="icon-button" title="Даље" aria-label="Даље" onClick={() => jump(index + 1)}><ArrowRight size={20} /></button>}
+      {index < 6 && <button type="button" className="icon-button" title="Заврши и даље" aria-label="Даље" onClick={() => { complete(index); jump(index + 1); }}><ArrowRight size={20} /></button>}
     </nav>
+    <Feedback section={parts[index][0]} remote={false} lessonSlug="ucimo-srpski-10" sectionPrefix="l10" />
+    </>
   );
 }
 
 function AudioPlayer({ label, text }: { label: string; text: string }) {
   const [speaking, setSpeaking] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [rate, setRate] = useState("0.9");
+  const [rate, setRate] = useState("1");
   const [transcript, setTranscript] = useState(false);
   const [error, setError] = useState("");
   const { active } = useContext(LessonNavigation);
@@ -128,7 +132,7 @@ function AudioPlayer({ label, text }: { label: string; text: string }) {
       <div className="audioControls">
         <button type="button" title={speaking && !paused ? "Пауза" : "Пусти"} aria-label={speaking && !paused ? "Пауза" : "Пусти"} onClick={() => { if (speaking && !paused) { window.speechSynthesis.pause(); setPaused(true); } else play(); }}>{speaking && !paused ? <Pause size={20} /> : <Play size={20} />}</button>
         <button type="button" title="Стоп" aria-label="Стоп" disabled={!speaking} onClick={stop}><Square size={18} /></button>
-        <label>Брзина <select value={rate} onChange={(event) => { stop(); setRate(event.target.value); }}><option value="0.7">0.7×</option><option value="0.9">0.9×</option><option value="1">1×</option></select></label>
+        <label>Брзина <select value={rate} onChange={(event) => { stop(); setRate(event.target.value); }}>{[0.5, 0.75, 1, 1.25, 1.5, 2].map(speed => <option key={speed} value={String(speed)}>{speed}×</option>)}</select></label>
       </div>
       <button type="button" className="transcript-toggle" aria-expanded={transcript} onClick={() => setTranscript(!transcript)}><FileText size={17} />Текст</button>
       {transcript && <p>{text}</p>}
@@ -215,23 +219,29 @@ function MatchingExercise({
   translations: string[];
   hint: string;
 }) {
-  const [active, setActive] = useState("");
+  const [active, setActive] = useState<{ side: "left" | "right"; value: string } | null>(null);
   const [matched, setMatched] = useState<string[]>([]);
   const [mistake, setMistake] = useState("");
   const rowHeight = 72;
   const canvasHeight = Math.max(pairs.length, translations.length) * rowHeight;
-  const chooseTranslation = (translation: string) => {
-    if (!active || matched.includes(active)) return;
-    const correct = pairs.find(([word]) => word === active)?.[1] === translation;
+  const choose = (side: "left" | "right", value: string) => {
+    if (!active || active.side === side) {
+      setActive({ side, value });
+      setMistake("");
+      return;
+    }
+    const word = side === "left" ? value : active.value;
+    const translation = side === "right" ? value : active.value;
+    const correct = pairs.find(([candidate]) => candidate === word)?.[1] === translation;
     if (correct) {
-      setMatched([...matched, active]);
-      setActive("");
+      setMatched(current => current.includes(word) ? current : [...current, word]);
+      setActive(null);
       setMistake("");
     } else {
-      setMistake(translation);
+      setMistake(`${side}:${value}`);
     }
   };
-  const reset = () => { setActive(""); setMatched([]); setMistake(""); };
+  const reset = () => { setActive(null); setMatched([]); setMistake(""); };
   return (
     <div className="matchingExercise">
       <p className="matchingHint">{hint}</p>
@@ -248,13 +258,13 @@ function MatchingExercise({
         <div className="matchingColumns">
           <div>
             {pairs.map(([word]) => (
-              <button key={word} className={`${active === word ? "activeMatch " : ""}${matched.includes(word) ? "matched" : ""}`} disabled={matched.includes(word)} onClick={() => { setActive(word); setMistake(""); }}>{word}</button>
+              <button key={word} aria-pressed={active?.side === "left" && active.value === word} className={`${active?.side === "left" && active.value === word ? "activeMatch " : ""}${mistake === `left:${word}` ? "wrongMatch " : ""}${matched.includes(word) ? "matched" : ""}`} disabled={matched.includes(word)} onClick={() => choose("left", word)}>{word}</button>
             ))}
           </div>
           <div>
             {translations.map((translation) => {
               const done = pairs.some(([word, ru]) => ru === translation && matched.includes(word));
-              return <button key={translation} className={`${mistake === translation ? "wrongMatch " : ""}${done ? "matched" : ""}`} disabled={done} onClick={() => chooseTranslation(translation)}>{translation}</button>;
+              return <button key={translation} aria-pressed={active?.side === "right" && active.value === translation} className={`${active?.side === "right" && active.value === translation ? "activeMatch " : ""}${mistake === `right:${translation}` ? "wrongMatch " : ""}${done ? "matched" : ""}`} disabled={done} onClick={() => choose("right", translation)}>{translation}</button>;
             })}
           </div>
         </div>
@@ -337,12 +347,17 @@ export default function Lesson10() {
   const [completed, setCompleted] = useState<number[]>([]);
   const [restored, setRestored] = useState(false);
   const [homework, setHomework] = useState("");
+  const [celebration, setCelebration] = useState(0);
+  const completedRef = useRef<number[]>([]);
   const content = useRef<HTMLDivElement>(null);
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("ty-serb-lesson-10-v2") || "{}");
       if (Number.isInteger(saved.active) && saved.active >= 0 && saved.active < 7) setActive(saved.active);
-      if (Array.isArray(saved.completed)) setCompleted([...new Set<number>(saved.completed.filter((value: unknown) => Number.isInteger(value) && Number(value) >= 0 && Number(value) < 7))]);
+      if (Array.isArray(saved.completed)) {
+        completedRef.current = [...new Set<number>(saved.completed.filter((value: unknown) => Number.isInteger(value) && Number(value) >= 0 && Number(value) < 7))];
+        setCompleted(completedRef.current);
+      }
       if (typeof saved.homework === "string") setHomework(saved.homework);
     } catch { /* Storage is optional. */ }
     setRestored(true);
@@ -358,16 +373,26 @@ export default function Lesson10() {
     setActive(index);
     requestAnimationFrame(() => content.current?.scrollIntoView({ block: "start", behavior: "auto" }));
   };
-  const complete = (index: number) => setCompleted((current) => current.includes(index) ? current : [...current, index]);
+  const complete = (index: number) => {
+    if (completedRef.current.includes(index)) return;
+    const next = [...completedRef.current, index];
+    completedRef.current = next;
+    setCompleted(next);
+    if (next.length === 7) {
+      setCelebration(current => current + 1);
+      jump(6);
+    }
+  };
   return (
     <LessonNavigation.Provider value={{ active, completed, jump, complete }}><div className="lesson-ten">
+      {celebration > 0 && <Fireworks key={celebration} />}
       <PartBar />
       <div className="wrap lessonContent" ref={content}>
       <div hidden={active !== 0}>
       <section className="hero" id="top">
         <div className="heroCopy">
           <p className="kicker">A1+ · ЛЕКЦИЈА 10</p>
-          <h1>Показне <em>заменице</em></h1>
+          <h1>Показне<br /><em>заменице</em></h1>
           <p className="lead">Ово, то или оно? Научи да покажеш шта је близу, шта је тамо, и како се придев слаже са именицом.</p>
           <div className="referenceStrip">
             <a href="/lessons/azbuka-i-proiznoshenie" target="_top">Референца: прва лекција</a>
@@ -392,7 +417,7 @@ export default function Lesson10() {
         <div className="note">Множина: <b>ови / ове / ова</b> (близу) · <b>ти / те / та</b> (средње) · <b>они / оне / она</b> (далеко)</div>
         <SectionNav index={1} />
       </section>
-      <section className="section" id="original" hidden={active !== 2}>
+      <section className="section red" id="original" hidden={active !== 2}>
         <div className="sectionHead"><span>03</span><div><p className="eyebrow">ОРИГИНАЛНА ВЕЖБА</p><h2>Допуни одговарајућим обликом</h2></div></div>
         <p>У првом задатку удаљеност није увек наведена: могући су различити облици истог рода. У питању „која књига?“ покажи две различите књиге. У другом задатку први предмет је поред говорника, а други код саговорника или даље: та / она, тај / онај, те / оне.</p>
         <div className="interactiveSourceTasks">
@@ -409,7 +434,7 @@ export default function Lesson10() {
         <div className="belowTableMatch"><h3>Повежи још четири речи</h3><MatchingExercise hint="Српски — русский" pairs={[["ружан", "некрасивый"], ["скуп", "дорогой"], ["јефтин", "дешёвый"], ["лош", "плохой"]]} translations={["дорогой", "плохой", "дешёвый", "некрасивый"]} /></div>
         <SectionNav index={3} />
       </section>
-      <section className="section" id="mnozina" hidden={active !== 4}>
+      <section className="section dark" id="mnozina" hidden={active !== 4}>
         <div className="sectionHead"><span>05</span><div><p className="eyebrow">МНОЖИНА</p><h2>Они, оне, она</h2></div></div>
         <p className="intro">У множини придеви имају само три облика: <b>какви?</b> (м.р.), <b>какве?</b> (ж.р.) и <b>каква?</b> (ср.р.).</p>
         <AudioPlayer label="Слушај множину" text="Ови нови телефони су моји. Те велике торбе су твоје. Она мала села су лепа. Ове лепе књиге су наше." />
@@ -444,7 +469,8 @@ export default function Lesson10() {
         <p><b>Бонус: детектив.</b> Замени фотографије са другом особом. Погоди чије су ствари: „Да ли је тај скупи ранац твој?“ Затим сними своју причу као гласовну поруку.</p>
         <label className="writing">Моја фото-прича<textarea rows={6} value={homework} onChange={(event) => setHomework(event.target.value)} /></label>
         <SectionNav index={6} />
-        {completed.length === 7 && <div className="completion" role="status"><Check size={24} /><h3>Лекција је завршена!</h3><p>Сачувај фото-причу и пошаљи је наставници са гласовном поруком.</p><button onClick={() => jump(0)}>Понови лекцију</button></div>}
+        {completed.includes(6) && completed.length < 7 && <div className="remaining"><h3>Још мало до краја</h3>{parts.map(([id,label],index) => !completed.includes(index) && <button key={id} onClick={() => jump(index)}>{index + 1}. {label}</button>)}</div>}
+        {completed.length === 7 && <div className="completion" role="status"><Check size={24} /><h3>Лекција је завршена!</h3><p>Сачувај фото-причу и пошаљи је наставници са гласовном поруком.</p><div className="completion-actions"><button onClick={() => jump(0)}><RotateCcw size={18} />Понови лекцију</button><button onClick={() => setCelebration(current => current + 1)}><PartyPopper size={18} />Фејерверк</button></div></div>}
       </section>
       <footer><b>ТЫ — СЕРБ / TY SERB</b><span>Лекција 10 · седам делова</span><a href="/lessons/azbuka-i-proiznoshenie">Прва лекција</a></footer>
       </div>

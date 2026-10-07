@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Send } from "lucide-react";
 
-export function Feedback({ section, remote }: { section: string; remote: boolean }) {
+export function Feedback({ section, remote, lessonSlug = "rod-muzhskoy-zhenskiy-sredniy", sectionPrefix = "l3" }: { section: string; remote: boolean; lessonSlug?: string; sectionPrefix?: string }) {
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
@@ -15,10 +15,10 @@ export function Feedback({ section, remote }: { section: string; remote: boolean
       const response = await fetch(`${remote ? "https://ty-serb.vercel.app" : ""}/api/lesson-feedback`, {
         method: "POST", credentials: remote ? "omit" : "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lessonSlug: "rod-muzhskoy-zhenskiy-sredniy", section: `l3-${section}`, name: name.trim(), message: message.trim() }),
+        body: JSON.stringify({ lessonSlug, section: `${sectionPrefix}-${section}`, name: name.trim(), message: message.trim() }),
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Не получилось отправить. Попробуй ещё раз.");
+      const result = await response.json().catch(() => ({ error: "Не получилось отправить. Попробуй ещё раз." }));
+      if (!response.ok || result?.ok !== true) throw new Error(result?.error || "Не получилось отправить. Попробуй ещё раз.");
       setMessage("");
       setStatus("sent");
     } catch (reason) {
@@ -26,7 +26,7 @@ export function Feedback({ section, remote }: { section: string; remote: boolean
       setStatus("error");
     }
   }
-  return <form className="feedback-form" onSubmit={submit} aria-label={`Обратная связь: ${section}`}>
+  return <form className="feedback-form" data-lesson-feedback={`${sectionPrefix}-${section}`} onSubmit={submit} aria-label={`Обратная связь: ${section}`}>
     <h3>Обратная связь</h3>
     <label>Имя <span className="optional">(необязательно)</span><input maxLength={80} autoComplete="given-name" value={name} onChange={e => setName(e.target.value)} /></label>
     <label>Комментарий<textarea required minLength={2} maxLength={1500} rows={3} placeholder="Твой вопрос, впечатления или пожелания" value={message} onChange={e => { setMessage(e.target.value); setStatus("idle"); }} /></label>

@@ -8,6 +8,8 @@ const lessonTwoSlug = "kak-predstavitsya";
 const lessonTwoSections = new Set(["intro", "reading", "vocabulary", "comic", "grammar", "comparison", "practice", "phrases", "homework", "recap"].map(id => `l2-${id}`));
 const lessonThreeSlug = "rod-muzhskoy-zhenskiy-sredniy";
 const lessonThreeSections = new Set(["intro", "comic", "countries", "taxi", "plural", "words", "possessives", "practice", "recap", "homework"].map(id => `l3-${id}`));
+const lessonTenSlug = "ucimo-srpski-10";
+const lessonTenSections = new Set(["reci", "gramatika", "original", "pridevi", "mnozina", "vezbe", "domaci"].map(id => `l10-${id}`));
 const lessonElevenSlug = "ucimo-srpski-11";
 const lessonElevenSections = new Set(["intro", "words", "comic", "grammar", "practice", "test", "homework", "apps"].map(id => `l11-${id}`));
 const lessonFourSlug = "prilagatelnye";
@@ -56,9 +58,10 @@ export async function POST(request: Request) {
     const name = String(body.name ?? "").trim().slice(0, 80);
     const message = String(body.message ?? "").trim().slice(0, 1500);
     const kind = body.kind === "introduction" ? "introduction" : "feedback";
-    if (!["azbuka-i-proiznoshenie", lessonTwoSlug, lessonThreeSlug, lessonFourSlug, lessonElevenSlug, lessonNineteenSlug].includes(lessonSlug) || !section || message.length < 2
+    if (!["azbuka-i-proiznoshenie", lessonTwoSlug, lessonThreeSlug, lessonFourSlug, lessonTenSlug, lessonElevenSlug, lessonNineteenSlug].includes(lessonSlug) || !section || message.length < 2
       || (lessonSlug === lessonTwoSlug && (!lessonTwoSections.has(section) || kind !== "feedback"))
       || (lessonSlug === lessonThreeSlug && (!lessonThreeSections.has(section) || kind !== "feedback"))
+      || (lessonSlug === lessonTenSlug && (!lessonTenSections.has(section) || kind !== "feedback"))
       || (lessonSlug === lessonElevenSlug && (!lessonElevenSections.has(section) || kind !== "feedback"))
       || (lessonSlug === lessonFourSlug && (!lessonFourSections.has(section) || kind !== "feedback"))
       || (lessonSlug === lessonNineteenSlug && (!lessonNineteenSections.has(section) || kind !== "feedback"))) {
@@ -66,7 +69,7 @@ export async function POST(request: Request) {
     }
 
     const user = await getCurrentUser();
-    if (lessonSlug === lessonElevenSlug && !canOpenLesson(user, getLessonBySlug(lessonSlug)!)) {
+    if ([lessonTenSlug, lessonElevenSlug].includes(lessonSlug) && !canOpenLesson(user, getLessonBySlug(lessonSlug)!)) {
       return NextResponse.json({ error: "Нужно войти и получить доступ к уроку" }, { status: user ? 403 : 401, headers });
     }
     await saveLessonFeedback({ userId: user?.id ?? null, lessonSlug, section, name, message, kind });
