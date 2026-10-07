@@ -38,21 +38,43 @@ export function Feedback({ section }: { section: string }) {
 export function Fireworks() {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const canvas = ref.current;
     const context = canvas?.getContext("2d");
     if (!canvas || !context) return;
+    const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
     let frame = 0;
+    let width = 0;
+    let height = 0;
     const ratio = Math.min(devicePixelRatio || 1, 2);
     const resize = () => {
-      canvas.width = innerWidth * ratio; canvas.height = innerHeight * ratio;
+      // Size to the visible celebration panel, not a tall course iframe's viewport.
+      width = canvas.clientWidth; height = canvas.clientHeight;
+      canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      if (reducedMotion) drawStill();
     };
-    resize();
-    addEventListener("resize", resize);
     type Spark = { x: number; y: number; vx: number; vy: number; life: number; color: string };
     const sparks: Spark[] = [];
     const colors = ["#c63440", "#134676", "#d5a51c", "#279c59"];
+    function drawStill() {
+      context!.clearRect(0, 0, width, height);
+      for (let burst = 0; burst < 5; burst++) {
+        const x = width * (0.12 + burst * 0.19);
+        const y = height * (burst % 2 ? 0.72 : 0.18);
+        for (let i = 0; i < 20; i++) {
+          const angle = i * Math.PI * 2 / 20;
+          context!.strokeStyle = colors[i % colors.length];
+          context!.lineWidth = 3;
+          context!.beginPath();
+          context!.moveTo(x + Math.cos(angle) * 20, y + Math.sin(angle) * 20);
+          context!.lineTo(x + Math.cos(angle) * 40, y + Math.sin(angle) * 40);
+          context!.stroke();
+        }
+      }
+    }
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(canvas);
     let bursts = 0;
     let previous = 0;
     const start = performance.now();
@@ -61,8 +83,8 @@ export function Fireworks() {
       const step = Math.min((now - (previous || now)) / 16.67, 2);
       previous = now;
       if (bursts < 7 && elapsed >= bursts * 350) {
-        const x = innerWidth * (0.15 + ((bursts * 37) % 70) / 100);
-        const y = innerHeight * (0.2 + (bursts % 3) * 0.13);
+        const x = width * (0.15 + ((bursts * 37) % 70) / 100);
+        const y = height * (0.2 + (bursts % 3) * 0.24);
         for (let i = 0; i < 48; i++) {
           const angle = i * Math.PI * 2 / 48;
           const speed = 2.5 + Math.random() * 3.5;
@@ -70,7 +92,7 @@ export function Fireworks() {
         }
         bursts++;
       }
-      context!.clearRect(0, 0, innerWidth, innerHeight);
+      context!.clearRect(0, 0, width, height);
       for (let i = sparks.length - 1; i >= 0; i--) {
         const spark = sparks[i];
         spark.x += spark.vx * step; spark.y += spark.vy * step;
@@ -78,14 +100,14 @@ export function Fireworks() {
         if (spark.life <= 0) { sparks.splice(i, 1); continue; }
         context!.globalAlpha = spark.life;
         context!.strokeStyle = spark.color;
-        context!.lineWidth = 3;
+        context!.lineWidth = 4;
         context!.beginPath(); context!.moveTo(spark.x, spark.y);
         context!.lineTo(spark.x - spark.vx * 2, spark.y - spark.vy * 2); context!.stroke();
       }
       if (elapsed < 5000) frame = requestAnimationFrame(draw);
     }
-    frame = requestAnimationFrame(draw);
-    return () => { cancelAnimationFrame(frame); removeEventListener("resize", resize); };
+    if (!reducedMotion) draw(start);
+    return () => { cancelAnimationFrame(frame); observer.disconnect(); };
   }, []);
   return <canvas ref={ref} className="fireworks" aria-hidden="true" />;
 }

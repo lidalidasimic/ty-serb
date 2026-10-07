@@ -13,13 +13,12 @@ const steps = [
   { id: "learning", title: "LearningApps", audio: true, task: true, check: false },
   { id: "homework", title: "Домаћи", audio: false, task: true, check: false },
 ];
-type Assessment = { understood?: string; listened?: string; task?: string };
-type Progress = { active: number; unlocked: number; completed: string[]; answers: Record<string, Assessment>; finished: boolean };
-const initial: Progress = { active: 0, unlocked: 0, completed: [], answers: {}, finished: false };
+type Progress = { active: number; unlocked: number; completed: string[]; finished: boolean };
+const initial: Progress = { active: 0, unlocked: 0, completed: [], finished: false };
 const key = "ty-serb-04:steps-v1";
 const Flow = createContext<{
   progress: Progress; ready: boolean; jump: (index: number) => void;
-  assess: (id: string, field: keyof Assessment, value: string) => void;
+  complete: (id: string) => void;
   advance: (id: string) => void;
 } | null>(null);
 export const CheckVersion = createContext(0);
@@ -36,16 +35,9 @@ export function LessonFlow({ children }: { children: ReactNode }) {
       if (saved && typeof saved === "object") {
         const unlocked = Number.isInteger(saved.unlocked) ? Math.max(0, Math.min(steps.length - 1, saved.unlocked)) : 0;
         const completed = Array.isArray(saved.completed) ? steps.map(step => step.id).filter(id => saved.completed.includes(id)) : [];
-        const answers: Record<string, Assessment> = {};
-        for (const { id } of steps) {
-          answers[id] = {};
-          for (const field of ["understood", "listened", "task"] as const) {
-            if (["yes", "no"].includes(saved.answers?.[id]?.[field])) answers[id][field] = saved.answers[id][field];
-          }
-        }
         const hashIndex = steps.findIndex(step => step.id === location.hash.slice(1));
         const active = hashIndex >= 0 && hashIndex <= unlocked ? hashIndex : Number.isInteger(saved.active) ? Math.max(0, Math.min(unlocked, saved.active)) : 0;
-        setProgress({ active, unlocked, completed, answers, finished: saved.finished === true && completed.length === steps.length });
+        setProgress({ active, unlocked, completed, finished: saved.finished === true && completed.length === steps.length });
       }
     } catch { /* Progress is optional when storage is unavailable. */ }
     setReady(true);
@@ -68,7 +60,7 @@ export function LessonFlow({ children }: { children: ReactNode }) {
   }, [progress.active]);
   useEffect(() => {
     if (celebrating) finish.current?.scrollIntoView({ block: "center", behavior: "instant" });
-  }, [celebrating]);
+  }, [celebrating, celebrationRound]);
   useEffect(() => {
     if (!celebrating) return;
     const timeout = setTimeout(() => setCelebrating(false), 5200);
@@ -85,23 +77,22 @@ export function LessonFlow({ children }: { children: ReactNode }) {
     history.pushState(null, "", `#${steps[index].id}`);
     scrollToStep();
   }
-  function assess(id: string, field: keyof Assessment, value: string) {
-    setProgress(previous => ({ ...previous, finished: false, answers: { ...previous.answers, [id]: { ...previous.answers[id], [field]: value } } }));
-    setCelebrating(false);
+  function complete(id: string) {
+    const index = steps.findIndex(step => step.id === id);
+    if (!ready || index !== progress.active || progress.completed.includes(id)) return;
+    setProgress(previous => ({ ...previous,
+      unlocked: Math.max(previous.unlocked, Math.min(index + 1, steps.length - 1)),
+      completed: [...previous.completed, id] }));
   }
   function advance(id: string) {
     const index = steps.findIndex(step => step.id === id);
-    const answer = progress.answers[id];
-    if (!ready || index !== progress.active || !answer?.understood || (steps[index].task && !answer.task)) return;
+    if (!ready || index !== progress.active || !progress.completed.includes(id)) return;
     const last = index === steps.length - 1;
-    setProgress(previous => ({ ...previous, active: last ? index : index + 1,
-      unlocked: Math.max(previous.unlocked, Math.min(index + 1, steps.length - 1)),
-      completed: previous.completed.includes(id) ? previous.completed : [...previous.completed, id], finished: last }));
+    setProgress(previous => ({ ...previous, active: last ? index : index + 1, finished: last }));
     if (last) { setCelebrationRound(previous => previous + 1); setCelebrating(true); }
     else { history.pushState(null, "", `#${steps[index + 1].id}`); scrollToStep(); }
   }
-  const review = steps.filter(step => progress.answers[step.id]?.understood === "no" || (step.task && progress.answers[step.id]?.task === "no"));
-  return <Flow.Provider value={{ progress, ready, jump, assess, advance }}>
+  return <Flow.Provider value={{ progress, ready, jump, complete, advance }}>
     <nav className="step-navigation" aria-label="Прогресс лекции">
       <div className="step-navigation-inner">
         <div className="step-caption"><b>ЛЕКЦИЯ 04</b><span>Шаг {progress.active + 1} из {steps.length} · {steps[progress.active].title}</span></div>
@@ -115,18 +106,11 @@ export function LessonFlow({ children }: { children: ReactNode }) {
     </nav>
     {children}
     {progress.finished && <div className="lesson-finish" ref={finish} role="status"><p className="eyebrow">ЛЕКЦИЯ ЗАВЕРШЕНА</p><h2>Браво! Четвёртый шаг пройден.</h2>
-      {review.length > 0 ? <><p>Можно вернуться к этим разделам:</p><div className="review-links">{review.map(step => <button key={step.id} onClick={() => jump(steps.indexOf(step))}>{step.title}</button>)}</div></> : <p>Мост пройден. Идемо даље!</p>}
+      <p>Мост пройден. Идемо даље!</p>
       <button type="button" onClick={() => { setCelebrationRound(previous => previous + 1); setCelebrating(true); }}>Ещё фейерверк</button>
+      {celebrating && <Fireworks key={celebrationRound} />}
     </div>}
-    {celebrating && <Fireworks key={celebrationRound} />}
   </Flow.Provider>;
-}
-
-function Choice({ id, field, title, yes, no }: { id: string; field: keyof Assessment; title: string; yes: string; no: string }) {
-  const flow = useContext(Flow)!;
-  return <fieldset className="self-check"><legend>{title}</legend>{[["yes", yes], ["no", no]].map(([value, label]) => <label key={value}>
-    <input type="radio" name={`${id}-${field}`} value={value} checked={flow.progress.answers[id]?.[field] === value} disabled={!flow.ready} onChange={() => flow.assess(id, field, value)} />{label}
-  </label>)}</fieldset>;
 }
 
 export function StepSection({ id, children }: { id: string; children: ReactNode }) {
@@ -134,23 +118,17 @@ export function StepSection({ id, children }: { id: string; children: ReactNode 
   const [checkVersion, setCheckVersion] = useState(0);
   const index = steps.findIndex(step => step.id === id);
   const step = steps[index];
-  const answer = flow.progress.answers[id];
-  const canAdvance = Boolean(flow.ready && answer?.understood && (!step.task || answer.task));
+  const completed = flow.progress.completed.includes(id);
+  const canAdvance = flow.ready && completed;
   return <div className="step-panel" data-step={id} hidden={flow.progress.active !== index}>
     <CheckVersion.Provider value={checkVersion}>{children}</CheckVersion.Provider>
     <div className="step-ending">
       {step.check && <button className="primary section-check" type="button" disabled={!flow.ready} onClick={() => setCheckVersion(previous => previous + 1)}>Проверить упражнения</button>}
-      <div className="self-checks">
-        <Choice id={id} field="understood" title="Материал" yes="Понял" no="Не понял" />
-        {step.task && <Choice id={id} field="task" title="Задания" yes="Сделал" no="Пока не сделал" />}
-        {step.audio && <Choice id={id} field="listened" title="Аудио" yes="Прослушал" no="Пока не прослушал" />}
-      </div>
       <nav className="step-controls" aria-label={`Переходы: ${step.title}`}>
         <button type="button" disabled={!flow.ready || index === 0} onClick={() => flow.jump(index - 1)}>Назад</button>
-        <span>{index + 1} / {steps.length}</span>
-        <button type="button" className="primary" disabled={!canAdvance} onClick={() => flow.advance(id)}>{index === steps.length - 1 ? "Завершить лекцию" : "Далее"}</button>
+        <button type="button" className="primary section-complete" disabled={!flow.ready || completed} onClick={() => flow.complete(id)}>{completed ? "Раздел завершён" : "Завершить раздел"}</button>
+        <button type="button" disabled={!canAdvance} onClick={() => flow.advance(id)}>{index === steps.length - 1 ? "Завершить лекцию" : "Далее"}</button>
       </nav>
-      {!canAdvance && <p className="assessment-hint">Отметь, понятен ли материал{step.task ? " и сделаны ли задания" : ""}.</p>}
       <Feedback section={id} />
     </div>
   </div>;

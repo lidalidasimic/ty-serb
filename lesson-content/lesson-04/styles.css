@@ -176,31 +176,25 @@ button:disabled { opacity:.48; cursor:not-allowed; transform:none; box-shadow:no
 .step-panel .lesson-section { border-bottom:0; padding-bottom:30px; }
 .step-ending { padding:0 0 48px; }
 .section-check { margin-bottom:22px; }
-.self-checks { display:flex; flex-wrap:wrap; gap:20px 36px; padding:24px 0; border-top:1px solid var(--line); }
-.self-check legend { font-weight:800; margin-bottom:10px; }
-.self-check label { display:flex; align-items:center; gap:8px; font-size:15px; margin:8px 0; cursor:pointer; }
-.self-check input { width:18px; height:18px; margin:0; accent-color:var(--blue); }
 .step-controls { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:16px; border-top:2px solid var(--ink); padding:22px 0; }
 .step-controls button:first-child { justify-self:start; }
+.step-controls .section-complete { justify-self:center; }
+.section-complete:disabled { background:#eef7f0; border-color:#177540; color:#177540; opacity:1; }
 .step-controls button:last-child { justify-self:end; }
-.step-controls span { color:var(--muted); font-size:14px; }
-.assessment-hint { font-size:14px; color:var(--muted); }
 .feedback-form { padding-top:28px; margin-top:16px; border-top:1px solid var(--line); }
 .feedback-form label { display:block; font-weight:700; font-size:15px; margin:16px 0; }
 .feedback-form input,.feedback-form textarea { display:block; width:100%; max-width:760px; padding:10px 12px; margin-top:7px; border:1px solid #85898e; border-radius:4px; color:var(--ink); background:#fcfcfc; }
 .feedback-form textarea { resize:vertical; min-height:110px; }
 .optional { font-weight:400; color:var(--muted); }
-.lesson-finish { max-width:1092px; margin:0 auto 48px; padding:32px 24px; border-top:2px solid var(--ink); }
+.lesson-finish { position:relative; isolation:isolate; min-height:360px; max-width:1092px; margin:0 auto 48px; padding:32px 24px; border-top:2px solid var(--ink); }
 .lesson-finish h2 { margin-bottom:22px; }
-.review-links { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:24px; }
-.fireworks { position:fixed; inset:0; width:100%; height:100%; z-index:100; pointer-events:none; }
+.fireworks { position:absolute; inset:0; width:100%; height:100%; z-index:1; pointer-events:none; }
 @media(max-width:760px) {
   .step-navigation-inner { padding:12px 18px 8px; }
   .step-caption { flex-direction:column; gap:3px; }
   .step-rail { gap:5px; }
   .step-rail button { min-height:36px; font-size:12px; border-radius:4px; }
   .step-ending { padding-bottom:30px; }
-  .self-checks { gap:14px 22px; }
-  .step-controls { gap:8px; }
-  .step-controls button { padding:9px 12px; font-size:13px; }
+  .step-controls { grid-template-columns:1fr 1.8fr 1.5fr; gap:8px; }
+  .step-controls button { padding:9px 8px; font-size:13px; width:100%; min-height:56px; white-space:normal; }
 }
