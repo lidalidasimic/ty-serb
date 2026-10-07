@@ -39,6 +39,9 @@ const lessonThreeAudio = new Set([
 ]);
 
 function isAllowedFile(lessonNumber: number, file: string) {
+  if (lessonNumber === 10) {
+    return ["index.html", "styles.css", "lesson.js"].includes(file);
+  }
   if (lessonNumber === 19) {
     return ["index.html", "styles.css", "lesson.js", "assets/lucide.min.js"].includes(file)
       || /^assets\/comic-(?:0[1-9]|1[0-2])\.png$/.test(file)
@@ -71,7 +74,7 @@ export async function GET(request: NextRequest, { params }: ContentRouteProps) {
   const lesson = getLessonBySlug(slug);
   const privateHeaders = { "Cache-Control": "private, no-store" };
 
-  if (!lesson || ![2, 3, 4, 11, 18, 19].includes(lesson.number)) {
+  if (!lesson || ![2, 3, 4, 10, 11, 18, 19].includes(lesson.number)) {
     return NextResponse.json({ error: "Материал не найден" }, { status: 404, headers: privateHeaders });
   }
 
