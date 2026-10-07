@@ -20,7 +20,7 @@ function Audio({id,base}:{id:string;base:string}) {
   const [speed,setSpeed]=useState("1");
   const [error,setError]=useState(false);
   const [textOpen,setTextOpen]=useState(false);
-  const src=`${base}/audio/${id}.m4a`;
+  const src=`${base}/audio/${id}.m4a?v=stereo-v2`;
   return <div className="narration">
     <div className="audio"><h3><Volume2 size={19} aria-hidden/>{tracks[id]}</h3>
       <audio ref={ref} controls preload="none" aria-label={tracks[id]} src={src} onError={()=>setError(true)}
