@@ -19,7 +19,7 @@ function loadModule(relativePath, dependencies = {}) {
   const module = { exports: {} };
   vm.runInNewContext(source, {
     exports: module.exports, module, process, Buffer, Uint8Array, URL,
-    require: (name) => name in dependencies ? dependencies[name] : require(name),
+    require: (name) => name in dependencies ? dependencies[name] : name === "@/components/LessonTenExperience" ? loadModule("components/LessonTenExperience.tsx").default : require(name),
   }, { filename });
   return module.exports;
 }
@@ -50,6 +50,82 @@ function createRoute(user, missing = false, slug = "misija-rtanj") {
     { params: Promise.resolve({ slug, path: parts }) },
   ) };
 }
+
+test("lesson 10 assets use the platform access policy and private folder", async () => {
+  const slug = "ucimo-srpski-10";
+  const files = ["index.html", "styles.css", "embedded.css", "lesson.js"];
+  for (const user of [null, { accessStatus: "pending" }, { accessStatus: "revoked" }, { accessStatus: "approved" }, { isAdmin: true }]) {
+    const route = createRoute(user, false, slug);
+    const authorized = access.canOpenLesson(user, lessons.getLessonBySlug(slug));
+    for (const file of files) {
+      const response = await route.get([file]);
+      assert.equal(response.status, authorized ? 200 : user ? 403 : 401);
+      assert.equal(response.headers.get("cache-control"), "private, no-store");
+      if (authorized) {
+        assert.match(route.calls.paths.at(-1), /lesson-content[/\\]lesson-10[/\\]/);
+        assert.equal(response.headers.get("content-security-policy"), "frame-ancestors 'self'");
+        assert.ok(readFileSync(new URL(`lesson-content/lesson-10/${file}`, root)).length);
+      }
+    }
+    if (!authorized) assert.equal(route.calls.reads, 0);
+  }
+  const route = createRoute({ accessStatus: "approved" }, false, slug);
+  for (const file of ["Lesson.tsx", "entry.tsx", "../lesson-11/index.html", "assets/lucide.min.js", "audio/missing.mp3"]) {
+    assert.equal((await route.get(file.split("/"))).status, 404);
+  }
+  assert.equal(route.calls.reads, 0);
+});
+
+test("lesson 10 is embedded below existing materials after the access check", async () => {
+  const slug = "ucimo-srpski-10";
+  for (const user of [null, { accessStatus: "pending" }, { accessStatus: "approved" }, { isAdmin: true }]) {
+    const page = loadModule("app/lessons/[slug]/page.tsx", {
+      "next/link": ({ children, ...props }) => React.createElement("a", props, children),
+      "next/navigation": { notFound: () => { throw new Error("Not found"); } },
+      "@/data/lessons": lessons,
+      "@/lib/access-control": access,
+      "@/lib/supabase-server": { getCurrentUser: async () => user, logActivity: async () => {} },
+      ...Object.fromEntries(["OneGamma", "Two", "Three", "Four", "Eleven", "Seventeen", "Eighteen", "Nineteen"].map(name => [`@/components/Lesson${name}Experience`, () => null])),
+    });
+    const html = renderToStaticMarkup(await page.default({ params: Promise.resolve({ slug }) }));
+    const frame = html.indexOf("data-lesson-ten=");
+    if (access.canOpenLesson(user, lessons.getLessonBySlug(slug))) {
+      assert.ok(frame > html.indexOf("Telegram-пост"));
+      assert.doesNotMatch(html, /<iframe/);
+      assert.match(html, /href="\/lessons\/ucimo-srpski-9"/);
+      assert.match(html, /href="\/lessons\/ucimo-srpski-11"/);
+    } else {
+      assert.equal(frame, -1);
+      assert.match(html, /Доступ к материалам ожидает подтверждения/);
+    }
+  }
+});
+
+test("embedded lesson 10 keeps seven parts and the first-lesson reference", () => {
+  const Lesson = loadModule("lesson-content/lesson-10/Lesson.tsx").default;
+  const html = renderToStaticMarkup(React.createElement(Lesson));
+  const sections = ["top", "reci", "gramatika", "original", "pridevi", "mnozina", "vezbe", "domaci"];
+  let previous = -1;
+  for (const id of sections) {
+    const offset = html.indexOf(`id="${id}"`);
+    assert.ok(offset > previous);
+    previous = offset;
+  }
+  assert.match(html, /href="\/lessons\/azbuka-i-proiznoshenie" target="_top"/);
+  assert.doesNotMatch(html, /chatgpt\.site|class="topbar"/);
+  assert.match(html, /Моје ствари и једна мала сцена/);
+  assert.equal((html.match(/aria-label="[1-7]\. /g) || []).length, 7);
+  assert.equal((html.match(/hidden=""/g) || []).length, 6);
+  const homework = html.slice(html.indexOf('id="domaci"'));
+  assert.doesNotMatch(homework, /aria-label="Даље"/);
+  assert.match(homework, /Моја фото-прича/);
+});
+
+test("lesson 10 styles stay inside the course experience", async () => {
+  const { default: postcss } = await import("postcss");
+  const stylesheet = postcss.parse(readFileSync(new URL("lesson-content/lesson-10/embedded.css", root), "utf8"));
+  stylesheet.walkRules(rule => assert.ok(rule.selectors.every(selector => selector.startsWith("[data-lesson-ten]"))));
+});
 
 const lessonThreeSlug = "rod-muzhskoy-zhenskiy-sredniy";
 const lessonFourSlug = "prilagatelnye";
