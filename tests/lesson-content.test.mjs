@@ -102,7 +102,7 @@ test("lesson 10 is embedded below existing materials after the access check", as
 });
 
 test("embedded lesson 10 keeps seven parts and the first-lesson reference", () => {
-  const Lesson = loadModule("lesson-content/lesson-10/Lesson.tsx").default;
+  const Lesson = loadModule("lesson-content/lesson-10/Lesson.tsx", { "../lesson-03/LessonTools": loadModule("lesson-content/lesson-03/LessonTools.tsx") }).default;
   const html = renderToStaticMarkup(React.createElement(Lesson));
   const sections = ["top", "reci", "gramatika", "original", "pridevi", "mnozina", "vezbe", "domaci"];
   let previous = -1;
@@ -119,6 +119,56 @@ test("embedded lesson 10 keeps seven parts and the first-lesson reference", () =
   const homework = html.slice(html.indexOf('id="domaci"'));
   assert.doesNotMatch(homework, /aria-label="Даље"/);
   assert.match(homework, /Моја фото-прича/);
+  assert.equal((html.match(/data-lesson-feedback="l10-/g) || []).length, 7);
+  for (const rate of [0.5, 0.75, 1, 1.25, 1.5, 2]) assert.equal((html.match(new RegExp(`<option value="${rate}"(?: selected="")?>`, "g")) || []).length, 5);
+  assert.match(html, /<option value="1" selected="">1×<\/option>/);
+  assert.doesNotMatch(html, /<option value="0\.[79]"/);
+  assert.match(html, /class="section red"/);
+  assert.match(html, /class="section dark"/);
+});
+
+test("lesson 10 feedback accepts all seven sections and preserves validation", async () => {
+  const user = { id: "student", accessStatus: "approved" };
+  for (const section of ["reci", "gramatika", "original", "pridevi", "mnozina", "vezbe", "domaci"]) {
+    const route = createFeedbackRoute(false, user);
+    const response = await route.submit({ lessonSlug: "ucimo-srpski-10", section: `l10-${section}`, message: "Ошибка в упражнении" }, "https://ty-serb.vercel.app");
+    assert.equal(response.status, 200);
+    assert.equal(route.submissions[0].section, `l10-${section}`);
+    assert.equal(route.submissions[0].lessonSlug, "ucimo-srpski-10");
+    assert.equal(route.submissions[0].kind, "feedback");
+    assert.equal((await route.submit({ lessonSlug: "ucimo-srpski-10", section: `l10-${section}`, message: "Ещё вопрос" }, "https://ty-serb.vercel.app")).status, 429);
+  }
+  const invalid = createFeedbackRoute(false, user);
+  for (const extra of [{ section: "l10-unknown" }, { section: "l3-intro" }, { message: " " }, { kind: "introduction" }]) {
+    assert.equal((await invalid.submit({ lessonSlug: "ucimo-srpski-10", section: "l10-reci", message: "Вопрос", ...extra }, "https://ty-serb.vercel.app")).status, 400);
+  }
+  assert.equal(invalid.submissions.length, 0);
+  const failed = createFeedbackRoute(true, user);
+  const response = await failed.submit({ lessonSlug: "ucimo-srpski-10", section: "l10-reci", message: "Вопрос" }, "https://ty-serb.vercel.app");
+  assert.equal(response.status, 500);
+  assert.doesNotMatch(await response.text(), /"ok":true|private database failure/);
+  for (const blockedUser of [null, { accessStatus: "pending" }, { accessStatus: "revoked" }]) {
+    const route = createFeedbackRoute(false, blockedUser);
+    assert.equal((await route.submit({ lessonSlug: "ucimo-srpski-10", section: "l10-reci", message: "Вопрос" }, "https://ty-serb.vercel.app")).status, blockedUser ? 403 : 401);
+    assert.equal(route.submissions.length, 0);
+  }
+});
+
+test("lesson 10 bug reports reach the teacher moderation panel", async () => {
+  const route = createFeedbackRoute(false, { id: "student", accessStatus: "approved" });
+  await route.submit({ lessonSlug: "ucimo-srpski-10", section: "l10-original", message: "Ошибка в упражнении" }, "https://ty-serb.vercel.app");
+  const entry = route.submissions[0];
+  const { default: AdminPage } = loadModule("app/admin/page.tsx", {
+    "@/app/admin/actions": { moderateFeedbackAction() {}, updateAccessStatusAction() {} },
+    "@/lib/supabase-server": {
+      requireAdmin: async () => {}, listProfiles: async () => [],
+      listRecentActivity: async () => [{ id: "feedback-10", user_id: entry.userId, lesson_slug: entry.lessonSlug, created_at: "2026-10-08T10:00:00Z", action_type: `lesson_feedback_pending:${JSON.stringify(entry)}` }],
+    },
+  });
+  const html = renderToStaticMarkup(await AdminPage({}));
+  assert.match(html, /l10-original/);
+  assert.match(html, /Ошибка в упражнении/);
+  assert.match(html, /ожидает проверки/);
 });
 
 test("lesson 10 styles stay inside the course experience", async () => {
