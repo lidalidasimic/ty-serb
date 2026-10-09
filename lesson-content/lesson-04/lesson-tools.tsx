@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
-export function Feedback({ section }: { section: string }) {
+export function Feedback({ section, title = "Обратная связь", placeholder = "Твой вопрос, впечатления или пожелания" }: { section: string; title?: string; placeholder?: string }) {
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
@@ -26,9 +26,9 @@ export function Feedback({ section }: { section: string }) {
     }
   }
   return <form className="feedback-form" onSubmit={submit} aria-label={`Обратная связь: ${section}`}>
-    <h3>Обратная связь</h3>
+    <h3>{title}</h3>
     <label>Имя <span className="optional">(необязательно)</span><input maxLength={80} autoComplete="given-name" value={name} onChange={e => setName(e.target.value)} /></label>
-    <label>Комментарий<textarea required minLength={2} maxLength={1500} rows={3} placeholder="Твой вопрос, впечатления или пожелания" value={message} onChange={e => { setMessage(e.target.value); setStatus("idle"); }} /></label>
+    <label>Комментарий<textarea required minLength={2} maxLength={1500} rows={3} placeholder={placeholder} value={message} onChange={e => { setMessage(e.target.value); setStatus("idle"); }} /></label>
     <button disabled={message.trim().length < 2 || status === "sending"}>{status === "sending" ? "Отправляем…" : "Отправить"}</button>
     {status === "sent" && <p className="correct" role="status">Спасибо! Сообщение отправлено Лидии.</p>}
     {status === "error" && <p className="incorrect" role="alert">{error}</p>}

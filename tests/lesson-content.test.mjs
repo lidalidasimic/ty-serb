@@ -179,7 +179,10 @@ test("lesson 10 styles stay inside the course experience", async () => {
 
 const lessonThreeSlug = "rod-muzhskoy-zhenskiy-sredniy";
 const lessonFourSlug = "prilagatelnye";
-const lessonFourFiles = ["index.html", "styles.css", "lesson.js", "question-reference.png"];
+const lessonFourAudio = ["intro", "opening-reading", "opening-translation", "questions", "molim", "phrases", "omsk-reading", "omsk-translation",
+  ...["molim-te", "molim-vas", "izvini", "izvinite", "nista", "nema-problema", "hvala", "hvala-lepo", "veliko-hvala", "nema-na-cemu", "i-drugi-put"].map(id => `phrase-${id}`)
+].map(id => `audio/${id}.mp3`);
+const lessonFourFiles = ["index.html", "styles.css", "lesson.js", "question-reference.png", ...lessonFourAudio];
 
 test("lesson 4 protects every file before reading it", async () => {
   for (const user of [null, ...["pending", "rejected", "revoked"].map(accessStatus => ({ accessStatus }))]) {
@@ -362,10 +365,10 @@ test("lesson 11 keeps the shared lesson header above its directly mounted conten
   }
 });
 
-test("lesson 4 retains original media, complete homework and eight empty audio players", () => {
+test("lesson 4 retains original media with eight recordings, phrase buttons and tap homework", () => {
   const tools = loadModule("lesson-content/lesson-04/lesson-tools.tsx");
   const flow = loadModule("lesson-content/lesson-04/lesson-flow.tsx", { "./lesson-tools": tools });
-  const Lesson = loadModule("lesson-content/lesson-04/Lesson.tsx", { "./lesson-flow": flow }).default;
+  const Lesson = loadModule("lesson-content/lesson-04/Lesson.tsx", { "./lesson-flow": flow, "./lesson-tools": tools }).default;
   const html = renderToStaticMarkup(React.createElement(Lesson));
   const sections = ["opening", "questions", "molim", "practice", "comic", "learning", "homework"];
   let previous = -1;
@@ -374,22 +377,64 @@ test("lesson 4 retains original media, complete homework and eight empty audio p
     assert.ok(offset > previous);
     previous = offset;
   }
-  assert.equal((html.match(/<audio\b/g) || []).length, 8);
-  assert.doesNotMatch(html.match(/<audio\b[^>]*>/g).join(""), /src=/);
+  assert.equal((html.match(/<audio\b/g) || []).length, 9);
+  assert.equal((html.match(/src="audio\/[^"]+\.mp3"/g) || []).length, 8);
+  assert.equal((html.match(/title="Прослушать:/g) || []).length, 11);
   assert.doesNotMatch(html.slice(html.indexOf('id="homework"')), /<audio\b/);
   assert.match(html, /src="\.\/question-reference\.png"/);
   assert.match(html, /e21c2589eaa04927a3ad367cc4697d0b\/original\/image\.png/);
   assert.equal((html.match(/\/original\/blob\.png/g) || []).length, 6);
-  assert.match(html, /learningapps\.org\/display\?v=pyj65zkf326/);
+  assert.match(html, /learningapps\.org\/watch\?v=pyj65zkf326/);
   for (let number = 5; number <= 10; number++) assert.match(html, new RegExp(`Упражнение ${number}`));
   assert.match(html, /Мой опросник:/);
   assert.equal((html.match(/data-step=/g) || []).length, 8);
   assert.equal((html.match(/class="step-panel"[^>]*hidden/g) || []).length, 7);
-  assert.equal((html.match(/class="feedback-form"/g) || []).length, 8);
+  assert.equal((html.match(/class="feedback-form"/g) || []).length, 9);
   assert.match(html, /Пройденные разделы/);
   assert.match(html, /Проверить упражнения/);
   assert.doesNotMatch(html, /gamma\.app\/(?:embed|docs)/);
   assert.doesNotMatch(html, /site-header|ty-serb-lesson-four.*chatgpt\.site/);
+  assert.doesNotMatch(html, /<select|Павла су испитивали|Разыграйте диалог|Аудио · ускоро/);
+  const homework = html.slice(html.indexOf('id="homework"')).split("</section>")[0];
+  assert.equal((homework.match(/class="notebook"/g) || []).length, 1);
+});
+
+test("lesson 4 recordings and phrase clips stay private and support seeking", async () => {
+  const route = createRoute({ accessStatus: "approved" }, false, lessonFourSlug);
+  for (const file of lessonFourAudio) {
+    const response = await route.get(file.split("/"), "bytes=2-4");
+    assert.equal(response.status, 206);
+    assert.equal(response.headers.get("content-type"), "audio/mpeg");
+    assert.equal(response.headers.get("cache-control"), "private, no-store");
+    assert.equal(await response.text(), "234");
+  }
+  for (const file of ["audio/missing.mp3", "audio/../intro.mp3", "audio/phrase-secret.mp3"]) {
+    assert.equal((await route.get(file.split("/"))).status, 404);
+  }
+});
+
+test("every lesson 4 exercise has at most five questions and offers every accepted answer", () => {
+  const tools = loadModule("lesson-content/lesson-04/lesson-tools.tsx");
+  const flow = loadModule("lesson-content/lesson-04/lesson-flow.tsx", { "./lesson-tools": tools });
+  const Lesson = loadModule("lesson-content/lesson-04/Lesson.tsx", { "./lesson-flow": flow, "./lesson-tools": tools }).default;
+  const exercises = [];
+  function visit(element) {
+    if (!React.isValidElement(element)) return;
+    if (element.type.name === "Exercise") exercises.push(element.props);
+    React.Children.forEach(element.props.children, visit);
+  }
+  visit(Lesson());
+  assert.equal(exercises.length, 14);
+  for (const exercise of exercises) {
+    assert.ok(exercise.rows.length > 0 && exercise.rows.length <= 5, exercise.id);
+    for (const row of exercise.rows) {
+      assert.equal(row.text.split("___").length - 1, row.answers.length, exercise.id);
+      row.answers.forEach((accepted, index) => {
+        const options = Array.isArray(row.options[0]) ? row.options[index] : row.options;
+        assert.ok(accepted.every(value => options.includes(value)), `${exercise.id}: ${accepted}`);
+      });
+    }
+  }
 });
 
 test("lesson 11 loads the two requested LearningApps only in their final step", () => {

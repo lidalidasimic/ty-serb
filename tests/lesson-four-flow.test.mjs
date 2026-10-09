@@ -86,6 +86,11 @@ test("one completion action unlocks each next section without navigating or radi
     tree.props.value.advance(id);
     tree = harness.render();
     assert.equal(tree.props.value.progress.active, Math.min(7, index + 1));
+    if (id === "learning") {
+      assert.equal(tree.props.value.progress.finished, true, "class ends before homework");
+      assert.equal(tree.props.value.progress.completed.includes("homework"), false);
+      assert.ok(descendants(tree).find(element => element.props.className === "lesson-finish"));
+    }
   });
   assert.equal(tree.props.value.progress.finished, true);
   const finish = descendants(tree).find(element => element.props.className === "lesson-finish");

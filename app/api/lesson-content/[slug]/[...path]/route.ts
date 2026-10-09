@@ -38,6 +38,14 @@ const lessonThreeAudio = new Set([
   "12-feminine.m4a", "13-neuter.m4a", "14-plural-practice.m4a", "15-possessive-singular.m4a", "16-possessive-plural.m4a",
 ]);
 
+const lessonFourAudio = new Set([
+  "intro.mp3", "opening-reading.mp3", "opening-translation.mp3", "questions.mp3",
+  "molim.mp3", "phrases.mp3", "omsk-reading.mp3", "omsk-translation.mp3",
+  "phrase-molim-te.mp3", "phrase-molim-vas.mp3", "phrase-izvini.mp3", "phrase-izvinite.mp3",
+  "phrase-nista.mp3", "phrase-nema-problema.mp3", "phrase-hvala.mp3", "phrase-hvala-lepo.mp3",
+  "phrase-veliko-hvala.mp3", "phrase-nema-na-cemu.mp3", "phrase-i-drugi-put.mp3",
+]);
+
 function isAllowedFile(lessonNumber: number, file: string) {
   if (lessonNumber === 10) {
     return ["index.html", "styles.css", "embedded.css", "lesson.js"].includes(file);
@@ -48,7 +56,8 @@ function isAllowedFile(lessonNumber: number, file: string) {
       || /^audio\/section-(?:0[1-9]|1[0-2])\.(?:mp3|wav|ogg|m4a|webm)$/.test(file);
   }
   if (lessonNumber === 4) {
-    return ["index.html", "styles.css", "lesson.js", "question-reference.png"].includes(file);
+    return ["index.html", "styles.css", "lesson.js", "question-reference.png"].includes(file)
+      || (file.startsWith("audio/") && lessonFourAudio.has(file.slice(6)));
   }
   if (lessonNumber === 11) {
     return ["index.html", "styles.css", "embedded.css", "lesson.js", "comic.png"].includes(file)

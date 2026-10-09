@@ -4,15 +4,16 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { Feedback, Fireworks } from "./lesson-tools";
 
 const steps = [
-  { id: "intro", title: "Введение", audio: true, task: false, check: false },
-  { id: "opening", title: "Молим или Молим?", audio: true, task: false, check: false },
-  { id: "questions", title: "Питања", audio: true, task: true, check: true },
-  { id: "molim", title: "Молим?", audio: true, task: true, check: true },
-  { id: "practice", title: "Вежбање", audio: true, task: true, check: true },
-  { id: "comic", title: "Битка за Омск", audio: true, task: false, check: false },
-  { id: "learning", title: "LearningApps", audio: true, task: true, check: false },
-  { id: "homework", title: "Домаћи", audio: false, task: true, check: false },
+  { id: "intro", title: "Введение", check: false },
+  { id: "opening", title: "Молим или Молим?", check: false },
+  { id: "questions", title: "Питања", check: true },
+  { id: "molim", title: "Молим?", check: true },
+  { id: "practice", title: "Вежбање", check: true },
+  { id: "comic", title: "Битка за Омск", check: false },
+  { id: "learning", title: "LearningApps", check: false },
+  { id: "homework", title: "Домаћи", check: true },
 ];
+const classSteps = steps.filter(step => step.id !== "homework");
 type Progress = { active: number; unlocked: number; completed: string[]; finished: boolean };
 const initial: Progress = { active: 0, unlocked: 0, completed: [], finished: false };
 const key = "ty-serb-04:steps-v1";
@@ -37,7 +38,7 @@ export function LessonFlow({ children }: { children: ReactNode }) {
         const completed = Array.isArray(saved.completed) ? steps.map(step => step.id).filter(id => saved.completed.includes(id)) : [];
         const hashIndex = steps.findIndex(step => step.id === location.hash.slice(1));
         const active = hashIndex >= 0 && hashIndex <= unlocked ? hashIndex : Number.isInteger(saved.active) ? Math.max(0, Math.min(unlocked, saved.active)) : 0;
-        setProgress({ active, unlocked, completed, finished: saved.finished === true && completed.length === steps.length });
+        setProgress({ active, unlocked, completed, finished: saved.finished === true && classSteps.every(step => completed.includes(step.id)) });
       }
     } catch { /* Progress is optional when storage is unavailable. */ }
     setReady(true);
@@ -88,9 +89,10 @@ export function LessonFlow({ children }: { children: ReactNode }) {
     const index = steps.findIndex(step => step.id === id);
     if (!ready || index !== progress.active || !progress.completed.includes(id)) return;
     const last = index === steps.length - 1;
-    setProgress(previous => ({ ...previous, active: last ? index : index + 1, finished: last }));
-    if (last) { setCelebrationRound(previous => previous + 1); setCelebrating(true); }
-    else { history.pushState(null, "", `#${steps[index + 1].id}`); scrollToStep(); }
+    const classFinished = id === "learning";
+    setProgress(previous => ({ ...previous, active: last ? index : index + 1, finished: previous.finished || classFinished || last }));
+    if (!last) { history.pushState(null, "", `#${steps[index + 1].id}`); scrollToStep(); }
+    if (classFinished || last) { setCelebrationRound(previous => previous + 1); setCelebrating(true); }
   }
   return <Flow.Provider value={{ progress, ready, jump, complete, advance }}>
     <nav className="step-navigation" aria-label="Прогресс лекции">
@@ -100,16 +102,16 @@ export function LessonFlow({ children }: { children: ReactNode }) {
           title={`${index + 1}. ${step.title}${index > progress.unlocked ? " · ещё не открыт" : ""}`}
           aria-label={`${index + 1}. ${step.title}`} aria-current={index === progress.active ? "step" : undefined}
           className={progress.completed.includes(step.id) ? "step-done" : ""} onClick={() => jump(index)}>{String(index + 1).padStart(2, "0")}</button>)}</div>
-        <progress max={steps.length} value={progress.completed.length} aria-label="Пройденные разделы" />
-        <span className="step-count">Пройдено {progress.completed.length} из {steps.length}</span>
+        <progress max={classSteps.length} value={classSteps.filter(step => progress.completed.includes(step.id)).length} aria-label="Пройденные разделы" />
+        <span className="step-count">Пройдено {classSteps.filter(step => progress.completed.includes(step.id)).length} из {classSteps.length} · домашнее задание отдельно</span>
       </div>
     </nav>
-    {children}
-    {progress.finished && <div className="lesson-finish" ref={finish} role="status"><p className="eyebrow">ЛЕКЦИЯ ЗАВЕРШЕНА</p><h2>Браво! Четвёртый шаг пройден.</h2>
-      <p>Мост пройден. Идемо даље!</p>
+    {progress.finished && progress.active === steps.length - 1 && <div className="lesson-finish" ref={finish} role="status"><p className="eyebrow">ЛЕКЦИЯ ЗАВЕРШЕНА</p><h2>Браво! Четвёртый урок пройден.</h2>
+      <p>Мост пройден. Ниже — короткая практика для закрепления.</p>
       <button type="button" onClick={() => { setCelebrationRound(previous => previous + 1); setCelebrating(true); }}>Ещё фейерверк</button>
       {celebrating && <Fireworks key={celebrationRound} />}
     </div>}
+    {children}
   </Flow.Provider>;
 }
 
@@ -127,7 +129,7 @@ export function StepSection({ id, children }: { id: string; children: ReactNode 
       <nav className="step-controls" aria-label={`Переходы: ${step.title}`}>
         <button type="button" disabled={!flow.ready || index === 0} onClick={() => flow.jump(index - 1)}>Назад</button>
         <button type="button" className="primary section-complete" disabled={!flow.ready || completed} onClick={() => flow.complete(id)}>{completed ? "Раздел завершён" : "Завершить раздел"}</button>
-        <button type="button" disabled={!canAdvance} onClick={() => flow.advance(id)}>{index === steps.length - 1 ? "Завершить лекцию" : "Далее"}</button>
+        <button type="button" disabled={!canAdvance} onClick={() => flow.advance(id)}>{index === steps.length - 1 ? "Готово" : "Далее"}</button>
       </nav>
       <Feedback section={id} />
     </div>
