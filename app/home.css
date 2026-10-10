@@ -22,6 +22,7 @@
     .course-home .hero .lead { font-size:20px; line-height:1.55; max-width:850px; margin-top:24px; color:#414141; }
     .course-home .hero .outcome { font-size:17px; color:var(--muted); margin-top:12px; max-width:850px; }
     .course-home .actions { display:flex; gap:14px; flex-wrap:wrap; margin-top:28px; }
+    .course-home .hero .demo-note { margin-top:12px; color:var(--muted); font-size:14px; }
     .course-home .button { display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:13px 20px; min-height:52px; border:var(--border); border-radius:6px; background:#fff; color:var(--ink); text-decoration:none; font-weight:800; font-size:16px; text-align:center; transition:box-shadow .15s,transform .15s; }
     .course-home .button:hover { box-shadow:3px 3px 0 var(--ink); transform:translate(-1px,-1px); }
     .course-home .button:active { transform:translate(1px,1px); box-shadow:none; }
@@ -144,4 +145,11 @@
     .course-home a.button { text-decoration: none; }
     .course-home button { color: inherit; }
     .course-home button.button-red, .course-home button.button-blue { color: white; }
-  
+
+@media (max-width:760px) {
+  .course-home .hero { padding-top:24px; }
+  .course-home .hero-label { margin-bottom:16px; }
+  .course-home .hero .lead { margin-top:18px; }
+  .course-home .hero .actions { flex-direction:column; margin-top:20px; }
+  .course-home .hero .actions .button { width:100%; }
+}

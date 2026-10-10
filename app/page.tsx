@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  BookOpen,
   BookOpenCheck,
   CheckCircle2,
   Layers,
@@ -66,12 +65,13 @@ export default async function HomePage() {
       <section className="hero wrap">
         <div className="eyebrow hero-label"><BookOpenCheck aria-hidden />Ты-Серб курс</div>
         <h1>Сербский язык для русскоговорящих</h1>
-        <p className="lead">Интерактивная платформа, с помощью которой вы сможете быстро освоить сербский для жизни, переезда, общения и культуры.</p>
-        <p className="outcome">После прохождения курса вы сможете общаться с людьми, находить друзей и решать повседневные задачи на сербском.</p>
+        <p className="lead">Интерактивные уроки сербского для жизни, переезда и общения. Начните с бесплатного первого урока.</p>
         <div className="actions">
-          <Link className="button button-red" href="#tariffs"><Layers aria-hidden />Смотреть тарифы</Link>
-          <Link className="button" href="#format"><BookOpen aria-hidden />Как устроен курс</Link>
+          <Link className="button button-red" href="/lessons/azbuka-i-proiznoshenie" aria-describedby="demo-note"><BookOpenCheck aria-hidden />Попробовать первый урок бесплатно</Link>
+          <Link className="button" href="#tariffs"><Layers aria-hidden />Смотреть тарифы</Link>
         </div>
+        <p className="demo-note" id="demo-note">Без регистрации и оплаты. Можно начать с нуля.</p>
+        <p className="outcome">После прохождения курса вы сможете общаться с людьми, находить друзей и решать повседневные задачи на сербском.</p>
         <div className="hero-facts">
           <div className="fact"><strong>С нуля</strong><span>понятный старт в сербском</span></div>
           <div className="fact"><strong>В своём темпе</strong><span>уроки и интерактивные задания</span></div>
